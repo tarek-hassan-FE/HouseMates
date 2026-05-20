@@ -62,3 +62,13 @@ export interface DebtLedgerEntry {
   settled_at: string | null;
   created_at: string;
 }
+
+export interface RewardRedemption {
+  id: string;
+  house_id: string;
+  profile_id: string;
+  reward_key: string;
+  xp_spent: number;
+  created_at: string;
+  profile?: { username: string } | null;
+}

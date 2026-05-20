@@ -554,5 +554,90 @@ WHERE p.house_id = h.id AND p.house_role = 'member'
     WHERE o.house_id = h.id AND o.house_role = 'admin'
   );
 
+-- -----------------------------------------------------------------------------
+-- PART 5: Rewards shop
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.reward_redemptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  house_id uuid NOT NULL REFERENCES public.houses (id) ON DELETE CASCADE,
+  profile_id uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
+  reward_key text NOT NULL CHECK (char_length(trim(reward_key)) >= 1),
+  xp_spent integer NOT NULL CHECK (xp_spent > 0),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS reward_redemptions_house_created_idx
+  ON public.reward_redemptions (house_id, created_at DESC);
+
+ALTER TABLE public.reward_redemptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "reward_redemptions_select_housemates" ON public.reward_redemptions;
+CREATE POLICY "reward_redemptions_select_housemates"
+  ON public.reward_redemptions FOR SELECT
+  TO authenticated
+  USING (house_id = public.user_house_id());
+
+CREATE OR REPLACE FUNCTION public.redeem_reward(p_reward_key text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_xp_cost integer;
+  v_total_xp integer;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  v_house_id := public.user_house_id();
+  IF v_house_id IS NULL THEN
+    RAISE EXCEPTION 'Join a house first';
+  END IF;
+
+  v_xp_cost := CASE trim(p_reward_key)
+    WHEN 'pick_friday_movie' THEN 100
+    WHEN 'skip_dish_duty' THEN 250
+    WHEN 'dj_cleanup' THEN 75
+    WHEN 'comfy_couch_weekend' THEN 150
+    WHEN 'veto_chore_assignment' THEN 200
+    WHEN 'delivery_pick' THEN 180
+    WHEN 'trash_immunity_week' THEN 400
+    ELSE NULL
+  END;
+
+  IF v_xp_cost IS NULL THEN
+    RAISE EXCEPTION 'Invalid reward';
+  END IF;
+
+  SELECT total_xp INTO v_total_xp
+  FROM public.profiles
+  WHERE id = v_user_id
+  FOR UPDATE;
+
+  IF v_total_xp IS NULL THEN
+    RAISE EXCEPTION 'Profile not found';
+  END IF;
+
+  IF v_total_xp < v_xp_cost THEN
+    RAISE EXCEPTION 'Insufficient XP';
+  END IF;
+
+  UPDATE public.profiles
+  SET total_xp = total_xp - v_xp_cost
+  WHERE id = v_user_id;
+
+  INSERT INTO public.reward_redemptions (house_id, profile_id, reward_key, xp_spent)
+  VALUES (v_house_id, v_user_id, trim(p_reward_key), v_xp_cost);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.redeem_reward(text) FROM public;
+GRANT EXECUTE ON FUNCTION public.redeem_reward(text) TO authenticated;
+
 -- Done
 SELECT 'HouseMate Harmony migrations applied successfully' AS status;

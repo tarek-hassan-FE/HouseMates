@@ -8,7 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { ChoreHubHero } from "@/components/chores/chore-hub-hero";
-import { RewardsShopPlaceholder } from "@/components/chores/rewards-shop-placeholder";
+import { RewardsShopCta } from "@/components/chores/rewards-shop-cta";
 import { ChoreAddModal } from "@/components/chores/chore-add-modal";
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries/keys";
@@ -279,7 +279,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
         </div>
 
         <div className="xl:col-span-4">
-          <RewardsShopPlaceholder />
+          <RewardsShopCta totalXp={profile.total_xp} />
         </div>
       </div>
 

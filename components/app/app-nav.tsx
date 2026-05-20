@@ -13,6 +13,7 @@ import { LocaleSwitcher } from "@/components/locale/locale-switcher";
 const sidebarNav = [
   { href: "/dashboard", key: "dashboard", icon: "dashboard" },
   { href: "/chores", key: "chores", icon: "task_alt" },
+  { href: "/rewards", key: "rewards", icon: "redeem" },
   { href: "/ledger", key: "finances", icon: "payments" },
   { href: "/dashboard#leaderboard", key: "leaderboard", icon: "leaderboard" },
   { href: "/settings", key: "houseSettings", icon: "settings" },
