@@ -128,10 +128,50 @@ Message files: [`messages/en.json`](messages/en.json), [`messages/ar.json`](mess
 3. `create_house` or `join_house` RPC sets `profiles.house_id`.
 4. All data access is scoped by RLS to the user's house.
 
+## Deploy to Vercel
+
+The app is linked to **[housemate-harmony](https://housemate-harmony.vercel.app)** on Vercel (`dodger23s-projects/housemate-harmony`), with GitHub repo `tarek-hassan-FE/HouseMates` connected for automatic deploys on push.
+
+### Required environment variables
+
+Set on the Vercel project (Production at minimum):
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable (anon) key from Supabase API settings |
+
+Sync from local `.env.local`:
+
+```bash
+npm run vercel:env
+```
+
+Or add manually in the [Vercel dashboard](https://vercel.com/dodger23s-projects/housemate-harmony/settings/environment-variables).
+
+### Supabase auth redirects
+
+After the first deploy, add your Vercel URL to **Supabase → Authentication → URL configuration**:
+
+- **Site URL:** `https://housemate-harmony.vercel.app`
+- **Redirect URLs:** `https://housemate-harmony.vercel.app/**` (and preview URLs if you use branch deploys)
+
+### CLI deploy
+
+```bash
+npx vercel login          # once per machine
+npx vercel link --yes --project housemate-harmony
+npm run vercel:env        # push NEXT_PUBLIC_* vars
+npm run deploy            # production
+```
+
+Config: [`vercel.json`](vercel.json) (Yarn install + build). Node 20 via [`.nvmrc`](.nvmrc).
+
 ## Scripts
 
 ```bash
 npm run dev      # Next.js dev server
 npm run build    # Production build
 npm run lint     # ESLint
+npm run deploy   # Vercel production deploy
 ```
