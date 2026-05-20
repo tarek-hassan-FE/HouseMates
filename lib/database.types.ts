@@ -51,3 +51,14 @@ export interface Expense {
   created_at: string;
   payer?: { username: string } | null;
 }
+
+export interface DebtLedgerEntry {
+  id: string;
+  house_id: string;
+  debtor_id: string;
+  creditor_id: string;
+  amount_cents: number;
+  expense_id: string | null;
+  settled_at: string | null;
+  created_at: string;
+}

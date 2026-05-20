@@ -1,37 +1,72 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireHouseSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { LeaderboardPodium } from "@/components/dashboard/leaderboard-podium";
 import { FinanceStatusCard } from "@/components/dashboard/finance-status-card";
-import { QuickActionGrid } from "@/components/dashboard/quick-action-grid";
+import { DashboardQuickActions } from "@/components/dashboard/dashboard-quick-actions";
 import { RecentActivityPlaceholder } from "@/components/dashboard/recent-activity-placeholder";
+import { formatDate } from "@/lib/format";
+import { centsToDisplay } from "@/lib/money";
 
 export default async function DashboardPage() {
   const session = await requireHouseSession();
   const supabase = await createClient();
-  const t = await getTranslations("dashboard");
+  const locale = await getLocale();
+  const tc = await getTranslations("common");
 
-  const [{ data: leaderboard }, { data: chores }, { data: debts }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("username, total_xp, current_level, avatar_url")
-        .eq("house_id", session.house.id)
-        .order("total_xp", { ascending: false })
-        .limit(3),
-      supabase
-        .from("chores")
-        .select("id, title, xp_reward, last_completed_at")
-        .eq("house_id", session.house.id)
-        .is("last_completed_at", null),
-      supabase
-        .from("debt_ledger")
-        .select("amount_cents, debtor_id, creditor_id")
-        .eq("house_id", session.house.id),
-    ]);
+  const [
+    { data: leaderboard },
+    { data: chores },
+    { data: debts },
+    { count: memberCount },
+    { data: recentExpenses },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("username, total_xp, current_level, avatar_url")
+      .eq("house_id", session.house.id)
+      .order("total_xp", { ascending: false })
+      .limit(3),
+    supabase
+      .from("chores")
+      .select("id, title, xp_reward, last_completed_at")
+      .eq("house_id", session.house.id)
+      .is("last_completed_at", null),
+    supabase
+      .from("debt_ledger")
+      .select(
+        "id, amount_cents, debtor_id, creditor_id, expense_id, settled_at",
+      )
+      .eq("house_id", session.house.id),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("house_id", session.house.id),
+    supabase
+      .from("expenses")
+      .select("title, amount_cents, created_at, payer_id")
+      .eq("house_id", session.house.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
 
-  const myDebts = (debts ?? []).filter((d) => d.debtor_id === session.userId);
-  const iOwe = myDebts.reduce((s, d) => s + d.amount_cents, 0);
+  const { data: members } = await supabase
+    .from("profiles")
+    .select("id, username, avatar_url")
+    .eq("house_id", session.house.id);
+
+  const payerNames = Object.fromEntries(
+    (members ?? []).map((m) => [m.id, m.username]),
+  );
+  const payerAvatars = Object.fromEntries(
+    (members ?? []).map((m) => [m.id, m.avatar_url]),
+  );
+
+  const unsettled = (debts ?? []).filter((d) => d.settled_at == null);
+  const iOwe = unsettled
+    .filter((d) => d.debtor_id === session.userId)
+    .reduce((s, d) => s + d.amount_cents, 0);
+  const hasUnsettledDebts = unsettled.length > 0;
 
   const entries = (leaderboard ?? []).map((m) => ({
     username: m.username,
@@ -42,22 +77,14 @@ export default async function DashboardPage() {
   const pendingChores = (chores ?? []).length;
   const leader = entries[0];
 
-  const activityRows = entries.slice(0, 2).map((mate, i) =>
-    i === 0
-      ? {
-          username: mate.username,
-          avatar_url: mate.avatar_url,
-          time: t("hoursAgo", { count: 2 }),
-          type: "chore" as const,
-          xp: 25,
-        }
-      : {
-          username: mate.username,
-          avatar_url: mate.avatar_url,
-          time: t("hoursAgo", { count: 5 }),
-          type: "shopping" as const,
-        },
-  );
+  const activityRows = (recentExpenses ?? []).map((expense) => ({
+    username: payerNames[expense.payer_id] ?? tc("unknown"),
+    avatar_url: payerAvatars[expense.payer_id],
+    time: formatDate(expense.created_at, locale),
+    type: "shopping" as const,
+    item: expense.title,
+    amountDisplay: centsToDisplay(expense.amount_cents, { locale }),
+  }));
 
   return (
     <>
@@ -68,10 +95,17 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
         <div className="flex flex-col lg:col-span-5">
-          <FinanceStatusCard youOweCents={iOwe} />
+          <FinanceStatusCard
+            youOweCents={iOwe}
+            memberCount={memberCount ?? 0}
+            hasUnsettledDebts={hasUnsettledDebts}
+          />
         </div>
         <div className="lg:col-span-7">
-          <QuickActionGrid pendingChoresCount={pendingChores} />
+          <DashboardQuickActions
+            pendingChoresCount={pendingChores}
+            memberCount={memberCount ?? 0}
+          />
         </div>
       </div>
 

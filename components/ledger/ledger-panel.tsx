@@ -12,17 +12,23 @@ import { ExpenseAddModal } from "@/components/ledger/expense-add-modal";
 import { centsToDisplay } from "@/lib/money";
 import { formatDate } from "@/lib/format";
 import { expenseIconName } from "@/lib/expense-icons";
+import {
+  buildDebtRows,
+  expenseSettlementStatus,
+  filterExpensesByStatus,
+  netBalanceCents,
+  sumYouOweCents,
+  sumYoureOwedCents,
+  type DebtForBalance,
+} from "@/lib/ledger-balances";
+import { splitEqualAmongMembers } from "@/lib/split-equal";
 import type { Expense } from "@/lib/database.types";
 import {
   createExpenseAction,
   deleteExpenseAction,
+  settleAllDebtsAction,
+  settleExpenseAction,
 } from "@/app/[locale]/(app)/ledger/actions";
-
-type DebtEntry = {
-  amount_cents: number;
-  debtor_id: string;
-  creditor_id: string;
-};
 
 type Member = {
   id: string;
@@ -36,12 +42,14 @@ export function LedgerPanel({
   expenses,
   debts,
   members,
+  memberCount,
   payerNames,
   userId,
 }: {
   expenses: Expense[];
-  debts: DebtEntry[];
+  debts: DebtForBalance[];
   members: Member[];
+  memberCount: number;
   payerNames: Record<string, string>;
   userId: string;
 }) {
@@ -55,64 +63,32 @@ export function LedgerPanel({
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
+  const isSoloHouse = memberCount <= 1;
   const memberById = Object.fromEntries(members.map((m) => [m.id, m]));
+  const memberIds = members.map((m) => m.id);
 
-  const youOweCents = debts
-    .filter((d) => d.debtor_id === userId)
-    .reduce((s, d) => s + d.amount_cents, 0);
-
-  const youreOwedCents = debts
-    .filter((d) => d.creditor_id === userId)
-    .reduce((s, d) => s + d.amount_cents, 0);
-
-  const netCents = youreOwedCents - youOweCents;
+  const youOweCents = sumYouOweCents(debts, userId);
+  const youreOwedCents = sumYoureOwedCents(debts, userId);
+  const netCents = netBalanceCents(debts, userId);
 
   const debtRows: DebtRow[] = useMemo(() => {
-    const map = new Map<string, DebtRow>();
+    const rows = buildDebtRows(debts, userId, memberIds);
+    return rows.map((row) => {
+      const other = memberById[row.otherUserId];
+      return {
+        ...row,
+        otherUsername: other?.username ?? tc("unknown"),
+        avatar_url: other?.avatar_url,
+      };
+    });
+  }, [debts, userId, memberIds, memberById, tc]);
 
-    for (const d of debts) {
-      if (d.debtor_id === userId) {
-        const other = memberById[d.creditor_id];
-        if (!other) continue;
-        const key = other.id;
-        const existing = map.get(key);
-        if (existing) {
-          existing.amountCents += d.amount_cents;
-        } else {
-          map.set(key, {
-            otherUserId: other.id,
-            otherUsername: other.username,
-            avatar_url: other.avatar_url,
-            amountCents: d.amount_cents,
-            direction: "you_owe",
-          });
-        }
-      } else if (d.creditor_id === userId) {
-        const other = memberById[d.debtor_id];
-        if (!other) continue;
-        const key = other.id;
-        const existing = map.get(key);
-        if (existing && existing.direction === "owes_you") {
-          existing.amountCents += d.amount_cents;
-        } else {
-          map.set(key, {
-            otherUserId: other.id,
-            otherUsername: other.username,
-            avatar_url: other.avatar_url,
-            amountCents: d.amount_cents,
-            direction: "owes_you",
-          });
-        }
-      }
-    }
+  const filteredExpenses = useMemo(
+    () => filterExpensesByStatus(expenses, debts, filter),
+    [expenses, debts, filter],
+  );
 
-    return Array.from(map.values());
-  }, [debts, memberById, userId]);
-
-  const filteredExpenses = useMemo(() => {
-    if (filter === "pending") return [];
-    return expenses;
-  }, [expenses, filter]);
+  const hasUnsettledDebts = debts.some((d) => d.settled_at == null);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -138,6 +114,25 @@ export function LedgerPanel({
     else router.refresh();
   }
 
+  async function handleSettleExpense(expenseId: string) {
+    setLoading(true);
+    setError(null);
+    const result = await settleExpenseAction(expenseId);
+    setLoading(false);
+    if (!result.success) setError(result.error);
+    else router.refresh();
+  }
+
+  async function handleSettleAll() {
+    if (!confirm(t("settleAllConfirm"))) return;
+    setLoading(true);
+    setError(null);
+    const result = await settleAllDebtsAction();
+    setLoading(false);
+    if (!result.success) setError(result.error);
+    else router.refresh();
+  }
+
   const filters: { key: Filter; labelKey: "filterAll" | "filterPending" | "filterSettled" }[] = [
     { key: "all", labelKey: "filterAll" },
     { key: "pending", labelKey: "filterPending" },
@@ -151,8 +146,15 @@ export function LedgerPanel({
           netCents={netCents}
           youOweCents={youOweCents}
           youreOwedCents={youreOwedCents}
+          isSoloHouse={isSoloHouse}
         />
-        <DebtMatrix rows={debtRows} />
+        <DebtMatrix
+          rows={debtRows}
+          isSoloHouse={isSoloHouse}
+          hasUnsettledDebts={hasUnsettledDebts}
+          onSettleAll={handleSettleAll}
+          settling={loading}
+        />
       </section>
 
       <section className="space-y-4">
@@ -196,6 +198,17 @@ export function LedgerPanel({
               expense.strategy === "equal"
                 ? t("equalSplit")
                 : t("customSplit");
+            const status = expenseSettlementStatus(expense.id, debts);
+            const splitDebts =
+              expense.strategy === "equal" && memberCount > 1
+                ? splitEqualAmongMembers(
+                    expense.amount_cents,
+                    memberIds,
+                    expense.payer_id,
+                  )
+                : [];
+            const shareCents =
+              splitDebts.length > 0 ? splitDebts[0].amountCents : null;
 
             return (
               <li
@@ -215,6 +228,15 @@ export function LedgerPanel({
                         name: payerNames[expense.payer_id] ?? tc("unknown"),
                       })}{" "}
                       · {strategyLabel}
+                      {shareCents != null && memberCount > 1 && (
+                        <>
+                          {" "}
+                          ·{" "}
+                          {t("shareEach", {
+                            amount: centsToDisplay(shareCents, { locale }),
+                          })}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -232,19 +254,27 @@ export function LedgerPanel({
                     {centsToDisplay(expense.amount_cents, { locale })}
                   </p>
                 </div>
-                <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:min-w-[100px] sm:justify-end">
-                  <StatusBadge
-                    label={
-                      filter === "settled" || filter === "all"
-                        ? t("settled")
-                        : t("pending")
-                    }
-                    variant={
-                      filter === "settled" || filter === "all"
-                        ? "settled"
-                        : "pending"
-                    }
-                  />
+                <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto sm:min-w-[140px]">
+                  {isSoloHouse ? (
+                    <StatusBadge label={t("logged")} variant="neutral" />
+                  ) : (
+                    <StatusBadge
+                      label={
+                        status === "settled" ? t("settled") : t("pending")
+                      }
+                      variant={status === "settled" ? "settled" : "pending"}
+                    />
+                  )}
+                  {status === "pending" && !isSoloHouse && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleSettleExpense(expense.id)}
+                      className="text-label-sm text-primary font-bold hover:underline"
+                    >
+                      {t("markSettled")}
+                    </button>
+                  )}
                   {isAdmin && (
                     <button
                       type="button"
@@ -278,6 +308,7 @@ export function LedgerPanel({
         onSubmit={handleCreate}
         loading={loading}
         error={error}
+        isSoloHouse={isSoloHouse}
       />
     </div>
   );

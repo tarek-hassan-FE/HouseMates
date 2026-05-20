@@ -20,7 +20,9 @@ export default async function LedgerPage() {
         .eq("house_id", session.house.id),
       supabase
         .from("debt_ledger")
-        .select("amount_cents, debtor_id, creditor_id")
+        .select(
+          "id, amount_cents, debtor_id, creditor_id, expense_id, settled_at",
+        )
         .eq("house_id", session.house.id),
     ]);
 
@@ -33,6 +35,7 @@ export default async function LedgerPage() {
       expenses={(expenses ?? []) as Expense[]}
       debts={debts ?? []}
       members={members ?? []}
+      memberCount={(members ?? []).length}
       payerNames={payerNames}
       userId={session.userId}
     />

@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { AvatarRing } from "@/components/design/avatar-ring";
-import { XpBadge } from "@/components/design/xp-badge";
 
 type ActivityRow = {
   username: string;
@@ -11,6 +10,8 @@ type ActivityRow = {
   time: string;
   type: "chore" | "shopping";
   xp?: number;
+  item?: string;
+  amountDisplay?: string;
 };
 
 export function RecentActivityPlaceholder({
@@ -58,16 +59,27 @@ export function RecentActivityPlaceholder({
                           <span className="font-bold">{chunks}</span>
                         ),
                         username: row.username,
-                        item: t("laundryDetergent"),
+                        item: row.item ?? "",
                       })}
+                  {row.type === "shopping" && row.amountDisplay && (
+                    <span className="text-on-surface-variant">
+                      {t("activityShoppingAmount", {
+                        amount: row.amountDisplay,
+                      })}
+                    </span>
+                  )}
                 </p>
                 <p className="text-label-sm text-on-surface-variant">
                   {row.time}
                 </p>
               </div>
             </div>
-            {row.type === "chore" && row.xp != null ? (
-              <XpBadge xp={row.xp} />
+            {row.type === "chore" ? (
+              row.xp != null && (
+                <span className="text-label-md text-tertiary font-bold">
+                  +{row.xp} XP
+                </span>
+              )
             ) : (
               <MaterialIcon
                 name="shopping_bag"
@@ -77,9 +89,6 @@ export function RecentActivityPlaceholder({
           </div>
         ))}
       </div>
-      <p className="text-label-sm text-on-surface-variant mt-3">
-        Sample activity — full feed coming soon.
-      </p>
     </section>
   );
 }

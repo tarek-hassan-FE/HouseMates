@@ -6,8 +6,10 @@ import { MaterialIcon } from "@/components/design/material-icon";
 
 export function QuickActionGrid({
   pendingChoresCount,
+  onAddShopping,
 }: {
   pendingChoresCount: number;
+  onAddShopping?: () => void;
 }) {
   const t = useTranslations("dashboard");
   const tc = useTranslations("common");
@@ -64,27 +66,53 @@ export function QuickActionGrid({
             />
           </span>
         </Link>
-        <button
-          type="button"
-          disabled
-          aria-disabled
-          title={tc("comingSoon")}
-          className="group border-outline-variant bg-surface-container-lowest md:col-span-2 flex cursor-not-allowed items-center gap-6 rounded-3xl border p-6 text-start opacity-80"
-        >
-          <div className="bg-secondary-fixed text-on-secondary-fixed flex size-14 shrink-0 items-center justify-center rounded-2xl">
-            <MaterialIcon name="shopping_cart" size={32} />
-          </div>
-          <div className="min-w-0 flex-grow">
-            <h4 className="text-headline-md text-on-surface">{t("addShopping")}</h4>
-            <p className="text-body-md text-on-surface-variant">
-              {t("addShoppingDesc")}
-            </p>
-          </div>
-          <MaterialIcon
-            name="chevron_right"
-            className="text-on-surface-variant shrink-0 rtl:-scale-x-100"
-          />
-        </button>
+        {onAddShopping ? (
+          <button
+            type="button"
+            onClick={onAddShopping}
+            className="group border-outline-variant bg-surface-container-lowest btn-press md:col-span-2 flex items-center gap-6 rounded-3xl border p-6 text-start transition-all hover:border-secondary hover:shadow-xl"
+          >
+            <div className="bg-secondary-fixed text-on-secondary-fixed flex size-14 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-110">
+              <MaterialIcon name="shopping_cart" size={32} />
+            </div>
+            <div className="min-w-0 flex-grow">
+              <h4 className="text-headline-md text-on-surface">
+                {t("addShopping")}
+              </h4>
+              <p className="text-body-md text-on-surface-variant">
+                {t("addShoppingDesc")}
+              </p>
+            </div>
+            <MaterialIcon
+              name="chevron_right"
+              className="text-on-surface-variant shrink-0 rtl:-scale-x-100"
+            />
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-disabled
+            title={tc("comingSoon")}
+            className="group border-outline-variant bg-surface-container-lowest md:col-span-2 flex cursor-not-allowed items-center gap-6 rounded-3xl border p-6 text-start opacity-80"
+          >
+            <div className="bg-secondary-fixed text-on-secondary-fixed flex size-14 shrink-0 items-center justify-center rounded-2xl">
+              <MaterialIcon name="shopping_cart" size={32} />
+            </div>
+            <div className="min-w-0 flex-grow">
+              <h4 className="text-headline-md text-on-surface">
+                {t("addShopping")}
+              </h4>
+              <p className="text-body-md text-on-surface-variant">
+                {t("addShoppingDesc")}
+              </p>
+            </div>
+            <MaterialIcon
+              name="chevron_right"
+              className="text-on-surface-variant shrink-0 rtl:-scale-x-100"
+            />
+          </button>
+        )}
       </div>
     </div>
   );

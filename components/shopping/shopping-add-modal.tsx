@@ -6,24 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type ExpenseAddModalProps = {
+type ShoppingAddModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   loading: boolean;
   error: string | null;
-  isSoloHouse: boolean;
+  memberCount: number;
 };
 
-export function ExpenseAddModal({
+export function ShoppingAddModal({
   open,
   onClose,
   onSubmit,
   loading,
   error,
-  isSoloHouse,
-}: ExpenseAddModalProps) {
-  const t = useTranslations("ledger");
+  memberCount,
+}: ShoppingAddModalProps) {
+  const t = useTranslations("shopping");
   const tc = useTranslations("common");
 
   if (!open) return null;
@@ -33,7 +33,7 @@ export function ExpenseAddModal({
       className="bg-foreground/40 fixed inset-0 z-[60] flex items-end justify-center overscroll-contain p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal
-      aria-labelledby="expense-modal-title"
+      aria-labelledby="shopping-modal-title"
     >
       <button
         type="button"
@@ -42,10 +42,13 @@ export function ExpenseAddModal({
         onClick={onClose}
       />
       <div className="bg-surface-container-lowest relative max-h-[min(90dvh,100%)] w-full max-w-lg overflow-y-auto rounded-t-[2rem] shadow-2xl sm:rounded-[2rem]">
-        <div className="bg-primary text-primary-foreground p-8">
+        <div className="bg-secondary text-on-secondary p-8">
           <div className="flex items-center justify-between">
-            <h2 id="expense-modal-title" className="text-headline-md font-bold">
-              {t("logExpense")}
+            <h2
+              id="shopping-modal-title"
+              className="text-headline-md font-bold"
+            >
+              {t("addItem")}
             </h2>
             <button
               type="button"
@@ -57,24 +60,26 @@ export function ExpenseAddModal({
             </button>
           </div>
           <p className="text-body-md mt-2 opacity-90">
-            {isSoloHouse ? t("soloHouseAddHint") : t("splitFairly")}
+            {memberCount > 1
+              ? t("splitAmong", { count: memberCount })
+              : t("splitSolo")}
           </p>
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-8">
-          <input type="hidden" name="strategy" value="equal" />
           <div className="space-y-2">
-            <Label htmlFor="title">{tc("title")}</Label>
+            <Label htmlFor="shopping-title">{t("itemName")}</Label>
             <Input
-              id="title"
+              id="shopping-title"
               name="title"
               required
+              placeholder={t("itemPlaceholder")}
               className="h-14 rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">{t("amountEgp")}</Label>
+            <Label htmlFor="shopping-amount">{t("amountEgp")}</Label>
             <Input
-              id="amount"
+              id="shopping-amount"
               name="amount"
               type="text"
               inputMode="decimal"
@@ -83,11 +88,6 @@ export function ExpenseAddModal({
               className="h-14 rounded-xl"
             />
           </div>
-          {isSoloHouse && (
-            <p className="text-label-sm text-on-surface-variant rounded-xl bg-surface-container-low p-3">
-              {t("soloHouseAddHint")}
-            </p>
-          )}
           {error && (
             <p className="text-destructive text-sm" role="alert">
               {error}
@@ -96,9 +96,9 @@ export function ExpenseAddModal({
           <Button
             type="submit"
             disabled={loading}
-            className="btn-press bg-primary h-14 w-full rounded-2xl font-bold"
+            className="btn-press bg-secondary text-on-secondary h-14 w-full rounded-2xl font-bold"
           >
-            {loading ? t("saving") : t("addExpenseBtn")}
+            {loading ? t("saving") : t("addItemBtn")}
           </Button>
         </form>
       </div>

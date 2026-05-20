@@ -8,10 +8,12 @@ export function FinanceOverview({
   netCents,
   youOweCents,
   youreOwedCents,
+  isSoloHouse,
 }: {
   netCents: number;
   youOweCents: number;
   youreOwedCents: number;
+  isSoloHouse: boolean;
 }) {
   const locale = useLocale();
   const t = useTranslations("ledger");
@@ -30,10 +32,16 @@ export function FinanceOverview({
           {netPositive ? "+" : ""}
           {centsToDisplay(Math.abs(netCents), { locale })}
         </h2>
-        <p className="text-body-md text-tertiary mt-1 flex items-center gap-1 font-medium">
-          <MaterialIcon name="trending_up" size={18} />
-          {netPositive ? t("netPositive") : t("netNegative")}
-        </p>
+        {isSoloHouse ? (
+          <p className="text-body-md text-on-surface-variant mt-2">
+            {t("soloHouseHint")}
+          </p>
+        ) : (
+          <p className="text-body-md text-tertiary mt-1 flex items-center gap-1 font-medium">
+            <MaterialIcon name="trending_up" size={18} />
+            {netPositive ? t("netPositive") : t("netNegative")}
+          </p>
+        )}
       </div>
       <div className="relative z-10 mt-6 flex gap-4">
         <div className="border-outline-variant/40 flex-1 rounded-2xl border bg-surface-container-lowest/80 p-4">

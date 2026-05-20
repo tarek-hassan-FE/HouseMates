@@ -1,7 +1,6 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import { AvatarRing } from "@/components/design/avatar-ring";
 import { centsToDisplay } from "@/lib/money";
 
@@ -13,7 +12,19 @@ export type DebtRow = {
   direction: "you_owe" | "owes_you";
 };
 
-export function DebtMatrix({ rows }: { rows: DebtRow[] }) {
+export function DebtMatrix({
+  rows,
+  isSoloHouse,
+  hasUnsettledDebts,
+  onSettleAll,
+  settling,
+}: {
+  rows: DebtRow[];
+  isSoloHouse: boolean;
+  hasUnsettledDebts: boolean;
+  onSettleAll: () => void;
+  settling: boolean;
+}) {
   const locale = useLocale();
   const t = useTranslations("ledger");
 
@@ -21,7 +32,12 @@ export function DebtMatrix({ rows }: { rows: DebtRow[] }) {
     <div className="border-outline-variant/20 bg-surface-container-lowest flex flex-col gap-3 rounded-3xl border p-4 shadow-sm">
       <h3 className="text-label-md text-on-surface px-1">{t("whoOwesWho")}</h3>
       <div className="max-h-40 space-y-2 overflow-y-auto pe-1">
-        {rows.length === 0 && (
+        {isSoloHouse && (
+          <p className="text-label-sm text-on-surface-variant px-2 py-4">
+            {t("soloHouseMatrixHint")}
+          </p>
+        )}
+        {!isSoloHouse && rows.length === 0 && (
           <p className="text-label-sm text-on-surface-variant px-2 py-4">
             {t("allClear")}
           </p>
@@ -59,12 +75,16 @@ export function DebtMatrix({ rows }: { rows: DebtRow[] }) {
           </div>
         ))}
       </div>
-      <Link
-        href="/ledger"
-        className="text-label-sm text-primary w-full py-2 text-center font-bold hover:underline"
-      >
-        {t("settleAll")}
-      </Link>
+      {!isSoloHouse && hasUnsettledDebts && (
+        <button
+          type="button"
+          disabled={settling}
+          onClick={onSettleAll}
+          className="text-label-sm text-primary w-full py-2 text-center font-bold hover:underline disabled:opacity-50"
+        >
+          {t("settleAll")}
+        </button>
+      )}
     </div>
   );
 }

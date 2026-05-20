@@ -66,9 +66,15 @@ CREATE TABLE IF NOT EXISTS public.debt_ledger (
   debtor_id uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
   creditor_id uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
   amount_cents integer NOT NULL CHECK (amount_cents > 0),
+  expense_id uuid REFERENCES public.expenses (id) ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
   CHECK (debtor_id <> creditor_id)
 );
+
+ALTER TABLE public.debt_ledger
+  ADD COLUMN IF NOT EXISTS expense_id uuid REFERENCES public.expenses (id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS debt_ledger_expense_id_idx ON public.debt_ledger (expense_id);
 
 CREATE INDEX IF NOT EXISTS houses_invite_code_idx ON public.houses (invite_code);
 CREATE INDEX IF NOT EXISTS profiles_house_id_idx ON public.profiles (house_id);
@@ -418,6 +424,126 @@ GRANT EXECUTE ON FUNCTION public.update_house_name(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.regenerate_invite_code() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.remove_house_member(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.transfer_house_admin(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.create_expense_with_equal_split(
+  p_title text,
+  p_amount_cents integer
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_expense_id uuid;
+  v_member_ids uuid[];
+  v_debtor_ids uuid[];
+  v_n integer;
+  v_base_share integer;
+  v_remainder integer;
+  v_debtor_count integer;
+  v_idx integer;
+  v_extra integer;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  v_house_id := public.user_house_id();
+  IF v_house_id IS NULL THEN RAISE EXCEPTION 'Join a house first'; END IF;
+  p_title := trim(p_title);
+  IF p_title = '' THEN RAISE EXCEPTION 'Title required'; END IF;
+  IF p_amount_cents IS NULL OR p_amount_cents <= 0 THEN RAISE EXCEPTION 'Invalid amount'; END IF;
+  INSERT INTO public.expenses (house_id, payer_id, title, amount_cents, strategy)
+  VALUES (v_house_id, v_user_id, p_title, p_amount_cents, 'equal')
+  RETURNING id INTO v_expense_id;
+  SELECT coalesce(array_agg(id ORDER BY id), '{}') INTO v_member_ids
+  FROM public.profiles WHERE house_id = v_house_id;
+  v_n := coalesce(array_length(v_member_ids, 1), 0);
+  IF v_n <= 1 THEN RETURN v_expense_id; END IF;
+  v_base_share := p_amount_cents / v_n;
+  v_remainder := p_amount_cents - v_base_share * v_n;
+  SELECT coalesce(array_agg(m ORDER BY m), '{}') INTO v_debtor_ids
+  FROM unnest(v_member_ids) AS m WHERE m <> v_user_id;
+  v_debtor_count := coalesce(array_length(v_debtor_ids, 1), 0);
+  IF v_debtor_count = 0 THEN RETURN v_expense_id; END IF;
+  FOR v_idx IN 1..v_debtor_count LOOP
+    v_extra := CASE WHEN v_idx <= v_remainder THEN 1 ELSE 0 END;
+    INSERT INTO public.debt_ledger (house_id, debtor_id, creditor_id, amount_cents, expense_id)
+    VALUES (v_house_id, v_debtor_ids[v_idx], v_user_id, v_base_share + v_extra, v_expense_id);
+  END LOOP;
+  RETURN v_expense_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_expense_with_equal_split(text, integer) FROM public;
+GRANT EXECUTE ON FUNCTION public.create_expense_with_equal_split(text, integer) TO authenticated;
+
+-- Debt settlement
+ALTER TABLE public.debt_ledger
+  ADD COLUMN IF NOT EXISTS settled_at timestamptz;
+
+CREATE INDEX IF NOT EXISTS debt_ledger_unsettled_house_idx
+  ON public.debt_ledger (house_id)
+  WHERE settled_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.settle_expense_debts(p_expense_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_house_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  v_house_id := public.user_house_id();
+  IF v_house_id IS NULL THEN
+    RAISE EXCEPTION 'Join a house first';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.expenses e
+    WHERE e.id = p_expense_id AND e.house_id = v_house_id
+  ) THEN
+    RAISE EXCEPTION 'Expense not found';
+  END IF;
+  UPDATE public.debt_ledger
+  SET settled_at = now()
+  WHERE expense_id = p_expense_id
+    AND house_id = v_house_id
+    AND settled_at IS NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.settle_all_house_debts()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_house_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  v_house_id := public.user_house_id();
+  IF v_house_id IS NULL THEN
+    RAISE EXCEPTION 'Join a house first';
+  END IF;
+  UPDATE public.debt_ledger
+  SET settled_at = now()
+  WHERE house_id = v_house_id
+    AND settled_at IS NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.settle_expense_debts(uuid) FROM public;
+GRANT EXECUTE ON FUNCTION public.settle_expense_debts(uuid) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.settle_all_house_debts() FROM public;
+GRANT EXECUTE ON FUNCTION public.settle_all_house_debts() TO authenticated;
 
 -- Backfill: first member in each house without an admin becomes admin
 UPDATE public.profiles p SET house_role = 'admin'
