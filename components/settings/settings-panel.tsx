@@ -6,7 +6,6 @@ import { useRouter } from "@/i18n/navigation";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import { useHouse } from "@/components/providers/house-context";
 import { LocaleSwitcher } from "@/components/locale/locale-switcher";
-import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,8 +87,6 @@ export function SettingsPanel({
       <section className="bg-surface-container-lowest shadow-card border-outline-variant/20 rounded-3xl border p-6">
         <LocaleSwitcher variant="full" />
       </section>
-
-      <InstallAppPrompt />
 
       <section className="bg-surface-container-lowest shadow-card border-outline-variant/20 rounded-3xl border p-6">
         <h2 className="text-headline-md text-on-surface font-semibold">

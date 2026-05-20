@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ShoppingListItem } from "@/lib/database.types";
+
+const OTHER_VALUE = "__other__";
 
 type ShoppingAddModalProps = {
   open: boolean;
@@ -13,6 +17,7 @@ type ShoppingAddModalProps = {
   loading: boolean;
   error: string | null;
   memberCount: number;
+  listItems: ShoppingListItem[];
 };
 
 export function ShoppingAddModal({
@@ -22,11 +27,19 @@ export function ShoppingAddModal({
   loading,
   error,
   memberCount,
+  listItems,
 }: ShoppingAddModalProps) {
   const t = useTranslations("shopping");
   const tc = useTranslations("common");
+  const hasList = listItems.length > 0;
+  const [selection, setSelection] = useState(
+    hasList ? listItems[0].id : OTHER_VALUE,
+  );
 
   if (!open) return null;
+
+  const showOtherInput = !hasList || selection === OTHER_VALUE;
+  const selectedItem = listItems.find((item) => item.id === selection);
 
   return (
     <div
@@ -66,16 +79,43 @@ export function ShoppingAddModal({
           </p>
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-8">
-          <div className="space-y-2">
-            <Label htmlFor="shopping-title">{t("itemName")}</Label>
-            <Input
-              id="shopping-title"
-              name="title"
-              required
-              placeholder={t("itemPlaceholder")}
-              className="h-14 rounded-xl"
-            />
-          </div>
+          {hasList && (
+            <div className="space-y-2">
+              <Label htmlFor="shopping-pick">{t("pickFromList")}</Label>
+              <select
+                id="shopping-pick"
+                name="listItemId"
+                value={selection}
+                onChange={(e) => setSelection(e.target.value)}
+                className="border-input bg-background text-foreground h-14 w-full rounded-xl border px-4 text-base"
+              >
+                {listItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+                <option value={OTHER_VALUE}>{t("otherOption")}</option>
+              </select>
+            </div>
+          )}
+
+          {showOtherInput ? (
+            <div className="space-y-2">
+              <Label htmlFor="shopping-title">{t("itemName")}</Label>
+              <Input
+                id="shopping-title"
+                name="title"
+                required={!hasList || selection === OTHER_VALUE}
+                placeholder={t("itemPlaceholder")}
+                className="h-14 rounded-xl"
+              />
+            </div>
+          ) : (
+            <p className="text-on-surface text-body-md font-semibold">
+              {selectedItem?.title}
+            </p>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="shopping-amount">{t("amountEgp")}</Label>
             <Input

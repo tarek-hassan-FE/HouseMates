@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { Button } from "@/components/ui/button";
 
+const PWA_INSTALLED_KEY = "roomies-pwa-installed";
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -31,16 +33,26 @@ function isStandaloneDisplay() {
   );
 }
 
+function isAppInstalled() {
+  if (isStandaloneDisplay()) return true;
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(PWA_INSTALLED_KEY) === "1";
+}
+
+function markAppInstalled() {
+  localStorage.setItem(PWA_INSTALLED_KEY, "1");
+}
+
 export function InstallAppPrompt() {
-  const t = useTranslations("settings");
-  const [isStandalone, setIsStandalone] = useState(true);
+  const t = useTranslations("dashboard");
+  const [shouldHide, setShouldHide] = useState<boolean | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [installEvent, setInstallEvent] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    setIsStandalone(isStandaloneDisplay());
+    setShouldHide(isAppInstalled());
     setIsIos(isIosDevice());
 
     const onBeforeInstall = (e: Event) => {
@@ -48,13 +60,20 @@ export function InstallAppPrompt() {
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
 
+    const onAppInstalled = () => {
+      markAppInstalled();
+      setShouldHide(true);
+    };
+
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onAppInstalled);
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
 
-  if (isStandalone) {
+  if (shouldHide === null || shouldHide) {
     return null;
   }
 
@@ -68,15 +87,19 @@ export function InstallAppPrompt() {
     setInstalling(true);
     try {
       await installEvent.prompt();
-      await installEvent.userChoice;
+      const { outcome } = await installEvent.userChoice;
       setInstallEvent(null);
+      if (outcome === "accepted") {
+        markAppInstalled();
+        setShouldHide(true);
+      }
     } finally {
       setInstalling(false);
     }
   }
 
   return (
-    <section className="bg-surface-container-lowest shadow-card border-outline-variant/20 rounded-3xl border p-6">
+    <section className="bg-surface-container-lowest shadow-card border-outline-variant/20 mb-8 rounded-3xl border p-6">
       <div className="flex items-start gap-3">
         <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
           <MaterialIcon name="install_mobile" size={24} />

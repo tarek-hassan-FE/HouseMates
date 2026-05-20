@@ -83,35 +83,6 @@ export async function createExpenseAction(
   return { success: true };
 }
 
-export async function createShoppingItemAction(
-  formData: FormData,
-): Promise<ActionResult> {
-  const t = await getTranslations("errors");
-  const session = await requireHouseUser();
-  if (session.error) return { success: false, error: session.error };
-
-  const { title, amountCents } = parseExpenseForm(formData);
-
-  if (!title) return { success: false, error: t("titleRequired") };
-  if (amountCents === null || amountCents <= 0) {
-    return { success: false, error: t("invalidAmount") };
-  }
-
-  const { error } = await session.supabase.rpc(
-    "create_expense_with_equal_split",
-    {
-      p_title: title,
-      p_amount_cents: amountCents,
-    },
-  );
-
-  if (error) return { success: false, error: error.message };
-
-  revalidatePath("/ledger");
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
 export async function settleExpenseAction(
   expenseId: string,
 ): Promise<ActionResult> {

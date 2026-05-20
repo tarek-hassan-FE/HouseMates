@@ -1,9 +1,14 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { requireHouseSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 import { LeaderboardPodium } from "@/components/dashboard/leaderboard-podium";
 import { FinanceStatusCard } from "@/components/dashboard/finance-status-card";
-import { DashboardQuickActions } from "@/components/dashboard/dashboard-quick-actions";
+import {
+  DashboardFab,
+  DashboardProvider,
+  DashboardQuickActions,
+} from "@/components/dashboard/dashboard-client";
 import { RecentActivityPlaceholder } from "@/components/dashboard/recent-activity-placeholder";
 import { formatDate } from "@/lib/format";
 import {
@@ -13,6 +18,7 @@ import {
   sumYoureOwedCents,
 } from "@/lib/ledger-balances";
 import { centsToDisplay } from "@/lib/money";
+import type { Profile, ShoppingListItem } from "@/lib/database.types";
 
 export default async function DashboardPage() {
   const session = await requireHouseSession();
@@ -27,6 +33,8 @@ export default async function DashboardPage() {
     { data: debts },
     { count: memberCount },
     { data: recentExpenses },
+    { data: shoppingListRows },
+    { data: houseMembers },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -60,18 +68,36 @@ export default async function DashboardPage() {
       .eq("house_id", session.house.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("shopping_list_items")
+      .select("id, house_id, title, created_by, created_at")
+      .eq("house_id", session.house.id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select(
+        "id, username, house_role, total_xp, current_level, house_id, avatar_url, created_at",
+      )
+      .eq("house_id", session.house.id),
   ]);
 
-  const { data: members } = await supabase
-    .from("profiles")
-    .select("id, username, avatar_url")
-    .eq("house_id", session.house.id);
+  const shoppingListItems: ShoppingListItem[] = (shoppingListRows ?? []).map(
+    (row) => ({
+      id: row.id,
+      house_id: row.house_id,
+      title: row.title,
+      created_by: row.created_by,
+      created_at: row.created_at,
+    }),
+  );
+
+  const members: Profile[] = (houseMembers ?? []) as Profile[];
 
   const payerNames = Object.fromEntries(
-    (members ?? []).map((m) => [m.id, m.username]),
+    members.map((m) => [m.id, m.username]),
   );
   const payerAvatars = Object.fromEntries(
-    (members ?? []).map((m) => [m.id, m.avatar_url]),
+    members.map((m) => [m.id, m.avatar_url]),
   );
 
   const debtRows = debts ?? [];
@@ -104,8 +130,22 @@ export default async function DashboardPage() {
     amountDisplay: centsToDisplay(expense.amount_cents, { locale }),
   }));
 
+  const dashboardProps = {
+    pendingChoresCount: pendingChores,
+    pendingApprovalsCount: session.isAdmin ? pendingApprovals : 0,
+    memberCount: memberCount ?? 0,
+    isAdmin: session.isAdmin,
+    isSoloHouse: (memberCount ?? 0) <= 1,
+    members,
+    shoppingListItems,
+  };
+
   return (
-    <>
+    <DashboardProvider
+      memberCount={dashboardProps.memberCount}
+      shoppingListItems={dashboardProps.shoppingListItems}
+    >
+      <InstallAppPrompt />
       <LeaderboardPodium
         entries={entries}
         leaderName={leader?.username}
@@ -123,9 +163,8 @@ export default async function DashboardPage() {
         </div>
         <div className="lg:col-span-7">
           <DashboardQuickActions
-            pendingChoresCount={pendingChores}
-            pendingApprovalsCount={session.isAdmin ? pendingApprovals : 0}
-            memberCount={memberCount ?? 0}
+            pendingChoresCount={dashboardProps.pendingChoresCount}
+            pendingApprovalsCount={dashboardProps.pendingApprovalsCount}
           />
         </div>
       </div>
@@ -133,6 +172,14 @@ export default async function DashboardPage() {
       {activityRows.length > 0 && (
         <RecentActivityPlaceholder rows={activityRows} />
       )}
-    </>
+
+      <DashboardFab
+        isAdmin={dashboardProps.isAdmin}
+        isSoloHouse={dashboardProps.isSoloHouse}
+        memberCount={dashboardProps.memberCount}
+        members={dashboardProps.members}
+        shoppingListItems={dashboardProps.shoppingListItems}
+      />
+    </DashboardProvider>
   );
 }

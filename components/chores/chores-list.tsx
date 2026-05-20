@@ -187,6 +187,9 @@ export function ChoresList({ members }: { members: Profile[] }) {
   const activeChores = chores.filter((c) => !c.last_completed_at);
   const completedChores = chores.filter((c) => c.last_completed_at);
   const pendingApprovalChores = activeChores.filter((c) => c.pending_completion);
+  const activeChoresForList = isAdmin
+    ? activeChores.filter((c) => !c.pending_completion)
+    : activeChores;
   const rank = computeRank(members, profile.id);
 
   const invalidateChores = () => {
@@ -513,16 +516,84 @@ export function ChoresList({ members }: { members: Profile[] }) {
       <div className="grid grid-cols-1 gap-gutter xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-8">
           {isAdmin && pendingApprovalChores.length > 0 && (
-            <div className="bg-tertiary-container/30 border-outline-variant rounded-[1.5rem] border px-4 py-3">
-              <p className="text-label-md text-on-surface font-semibold">
-                {t("pendingApprovals")}
-              </p>
-              <p className="text-body-sm text-on-surface-variant mt-0.5">
-                {t("pendingApprovalsCount", {
-                  count: pendingApprovalChores.length,
+            <>
+              <div className="flex items-end justify-between px-2">
+                <h3 className="text-headline-md text-on-surface flex items-center gap-2">
+                  <MaterialIcon name="hourglass_top" className="text-primary" />
+                  {t("awaitingApproval")}
+                </h3>
+                <span className="text-label-md text-on-surface-variant">
+                  {t("pendingApprovalsCount", {
+                    count: pendingApprovalChores.length,
+                  })}
+                </span>
+              </div>
+              <ul className="space-y-3">
+                {pendingApprovalChores.map((chore) => {
+                  const icon = choreIconName(chore.title);
+                  const submitterName = chore.pending_completion
+                    ? memberMap[chore.pending_completion.submitted_by]
+                    : null;
+
+                  return (
+                    <li
+                      key={chore.id}
+                      className="bg-surface-container-lowest border-outline-variant/20 relative flex flex-col gap-3 rounded-[1.5rem] border border-b-4 p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="bg-secondary-container/20 text-secondary flex size-12 shrink-0 items-center justify-center rounded-2xl sm:size-14">
+                          <MaterialIcon name={icon} size={28} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-body-lg text-on-surface line-clamp-2 font-bold">
+                            {chore.title}
+                          </h4>
+                          <ChoreMetaChips
+                            chore={chore}
+                            memberMap={memberMap}
+                            t={t}
+                          />
+                          {submitterName && (
+                            <p className="text-on-surface-variant text-label-sm mt-1">
+                              {t("submittedBy", { name: submitterName })}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <span className="bg-secondary-fixed/30 text-on-secondary-fixed text-label-sm rounded-full px-2.5 py-0.5 font-bold">
+                            +{chore.xp_reward} XP
+                          </span>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(chore)}
+                              className="btn-press bg-primary text-white text-label-sm rounded-xl px-4 py-2 font-bold transition-colors hover:brightness-95"
+                            >
+                              {t("approve")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReject(chore)}
+                              className="text-error text-label-sm hover:underline px-4 py-2"
+                            >
+                              {t("reject")}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="border-outline-variant/20 border-t pt-2">
+                        <AdminChoreActions
+                          onEdit={() => openEditForm(chore)}
+                          onDelete={() => handleDelete(chore.id)}
+                          t={t}
+                          tc={tc}
+                        />
+                      </div>
+                    </li>
+                  );
                 })}
-              </p>
-            </div>
+              </ul>
+            </>
           )}
 
           <div className="flex items-end justify-between px-2">
@@ -531,7 +602,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
               {t("activeChores")}
             </h3>
             <span className="text-label-md text-on-surface-variant">
-              {t("pendingCount", { count: activeChores.length })}
+              {t("pendingCount", { count: activeChoresForList.length })}
             </span>
           </div>
 
@@ -542,17 +613,14 @@ export function ChoresList({ members }: { members: Profile[] }) {
           )}
 
           <ul className="space-y-3">
-            {activeChores.length === 0 && (
+            {activeChoresForList.length === 0 && (
               <li className="text-on-surface-variant border-outline-variant rounded-[1.5rem] border border-dashed p-10 text-center">
                 {isAdmin ? t("noActiveAdmin") : t("noActiveMember")}
               </li>
             )}
-            {activeChores.map((chore) => {
+            {activeChoresForList.map((chore) => {
               const icon = choreIconName(chore.title);
               const isCelebrating = celebratingId === chore.id;
-              const submitterName = chore.pending_completion
-                ? memberMap[chore.pending_completion.submitted_by]
-                : null;
 
               return (
                 <li
@@ -582,11 +650,6 @@ export function ChoresList({ members }: { members: Profile[] }) {
                         {chore.title}
                       </h4>
                       <ChoreMetaChips chore={chore} memberMap={memberMap} t={t} />
-                      {isAdmin && submitterName && (
-                        <p className="text-on-surface-variant text-label-sm mt-1">
-                          {t("submittedBy", { name: submitterName })}
-                        </p>
-                      )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <span className="bg-secondary-fixed/30 text-on-secondary-fixed text-label-sm rounded-full px-2.5 py-0.5 font-bold">
@@ -596,25 +659,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
                     </div>
                   </div>
                   {isAdmin && (
-                    <div className="border-outline-variant/20 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                      {chore.pending_completion && (
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(chore)}
-                            className="btn-press bg-primary text-on-primary text-label-sm rounded-xl px-4 py-2 font-bold"
-                          >
-                            {t("approve")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(chore)}
-                            className="text-error text-label-sm hover:underline px-4 py-2"
-                          >
-                            {t("reject")}
-                          </button>
-                        </div>
-                      )}
+                    <div className="border-outline-variant/20 border-t pt-2">
                       <AdminChoreActions
                         onEdit={() => openEditForm(chore)}
                         onDelete={() => handleDelete(chore.id)}

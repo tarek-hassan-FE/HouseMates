@@ -15,23 +15,21 @@ const sidebarNav = [
   { href: "/chores", key: "chores", icon: "task_alt" },
   { href: "/rewards", key: "rewards", icon: "redeem" },
   { href: "/ledger", key: "finances", icon: "payments" },
-  { href: "/dashboard#leaderboard", key: "leaderboard", icon: "leaderboard" },
+  { href: "/shopping", key: "shoppingList", icon: "shopping_cart" },
   { href: "/settings", key: "houseSettings", icon: "settings" },
 ] as const;
 
-const mobileNavBeforeFab = [
+const mobileNav = [
   { href: "/dashboard", key: "dashboard", icon: "dashboard" },
   { href: "/chores", key: "chores", icon: "task_alt" },
-] as const;
-
-const mobileNavAfterFab = [
-  { href: "/dashboard#leaderboard", key: "leaderboard", icon: "leaderboard" },
+  { href: "/shopping", key: "shoppingList", icon: "shopping_cart" },
   { href: "/ledger", key: "finances", icon: "payments" },
+  { href: "/settings", key: "houseSettings", icon: "settings" },
 ] as const;
 
 function mobileNavLinkClass(active: boolean) {
   return cn(
-    "btn-press flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 px-1 text-xs font-bold uppercase",
+    "btn-press flex size-11 items-center justify-center rounded-full",
     active ? "text-primary" : "text-on-surface-variant",
   );
 }
@@ -54,50 +52,22 @@ function isActive(pathname: string, href: string, hash: string) {
     const [path, fragment] = href.split("#");
     return pathname === path && hash === `#${fragment}`;
   }
-  if (href === "/dashboard" && pathname === "/dashboard" && hash === "#leaderboard") {
-    return false;
-  }
   return pathname === href;
 }
 
-function pageTitleKey(pathname: string, hash: string): (typeof sidebarNav)[number]["key"] | null {
-  if (pathname === "/dashboard" && hash === "#leaderboard") {
-    return "leaderboard";
-  }
-  const match = sidebarNav.find(
-    (item) => !item.href.includes("#") && item.href === pathname,
-  );
-  return match?.key ?? null;
-}
-
 export function AppTopBar() {
-  const pathname = usePathname();
-  const hash = useHash();
   const { profile } = useHouse();
   const t = useTranslations("nav");
   const tc = useTranslations("common");
-  const titleKey = pageTitleKey(pathname, hash);
-  const pageTitle = titleKey ? t(titleKey) : tc("appName");
 
   return (
     <header className="bg-surface/60 border-outline-variant/10 fixed inset-x-0 top-0 z-50 h-16 w-full border-b shadow-sm backdrop-blur-md">
       <div className="flex h-full w-full items-center">
         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 sm:px-6">
           <h1 className="text-headline-md text-on-surface min-w-0 truncate font-bold md:text-primary">
-            {pageTitle}
+            {tc("appName")}
           </h1>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-            <Link
-              href="/settings"
-              className={cn(
-                "btn-press text-on-surface-variant hover:text-primary-container flex size-11 items-center justify-center rounded-full transition-colors md:hidden",
-                pathname === "/settings" && "text-primary",
-              )}
-              aria-label={t("houseSettings")}
-              aria-current={pathname === "/settings" ? "page" : undefined}
-            >
-              <MaterialIcon name="settings" filled={pathname === "/settings"} />
-            </Link>
             <LocaleSwitcher />
             <button
               type="button"
@@ -197,9 +167,7 @@ export function AppSidebar({ houseName }: { houseName: string }) {
   );
 }
 
-type MobileNavKey =
-  | (typeof mobileNavBeforeFab)[number]["key"]
-  | (typeof mobileNavAfterFab)[number]["key"];
+type MobileNavKey = (typeof mobileNav)[number]["key"];
 
 function MobileNavLink({
   href,
@@ -217,10 +185,10 @@ function MobileNavLink({
     <Link
       href={href}
       className={mobileNavLinkClass(active)}
+      aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
     >
-      <MaterialIcon name={icon} filled={active} size={22} />
-      <span className="max-w-[4.5rem] truncate leading-tight">{t(labelKey)}</span>
+      <MaterialIcon name={icon} filled={active} size={24} />
     </Link>
   );
 }
@@ -235,25 +203,7 @@ export function AppBottomNav() {
       className="bg-surface-container-lowest border-outline-variant/20 fixed bottom-0 start-0 z-50 grid w-full grid-cols-5 items-end gap-1 border-t px-1 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
       aria-label={t("mainNavigation")}
     >
-      {mobileNavBeforeFab.map(({ href, key, icon }) => (
-        <MobileNavLink
-          key={href}
-          href={href}
-          labelKey={key}
-          icon={icon}
-          active={isActive(pathname, href, hash)}
-        />
-      ))}
-      <div className="relative flex justify-center -top-5">
-        <Link
-          href="/chores?add=1"
-          className="btn-press bg-primary text-primary-foreground flex size-12 items-center justify-center rounded-full shadow-lg"
-          aria-label={t("quickAdd")}
-        >
-          <MaterialIcon name="add" size={28} />
-        </Link>
-      </div>
-      {mobileNavAfterFab.map(({ href, key, icon }) => (
+      {mobileNav.map(({ href, key, icon }) => (
         <MobileNavLink
           key={href}
           href={href}

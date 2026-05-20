@@ -70,3 +70,12 @@ export interface RewardRedemption {
   created_at: string;
   profile?: { username: string } | null;
 }
+
+export interface ShoppingListItem {
+  id: string;
+  house_id: string;
+  title: string;
+  created_by: string;
+  created_at: string;
+  creator?: { username: string } | null;
+}
