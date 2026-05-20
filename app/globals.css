@@ -17,12 +17,14 @@
   --color-surface-container-highest: var(--surface-container-highest);
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
+  --color-on-secondary: var(--on-secondary);
   --color-on-secondary-container: var(--on-secondary-container);
   --color-secondary-container: var(--secondary-container);
   --color-secondary-fixed: var(--secondary-fixed);
   --color-secondary-fixed-dim: var(--secondary-fixed-dim);
   --color-on-secondary-fixed: var(--on-secondary-fixed);
   --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
   --color-tertiary-container: var(--tertiary-container);
   --color-tertiary-fixed: var(--tertiary-fixed);
   --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
@@ -74,6 +76,7 @@
   --on-primary-container: #fefcff;
   --primary-fixed: #d8e2ff;
   --secondary: #735c00;
+  --on-secondary: #ffffff;
   --secondary-foreground: #ffffff;
   --secondary-container: #fed01b;
   --on-secondary-container: #6f5900;
@@ -81,6 +84,7 @@
   --secondary-fixed-dim: #eec200;
   --on-secondary-fixed: #231b00;
   --tertiary: #006b2d;
+  --on-tertiary: #ffffff;
   --tertiary-container: #00873b;
   --on-tertiary-container: #f7fff3;
   --tertiary-fixed: #6bff8f;
@@ -146,6 +150,9 @@
   }
   .btn-press {
     @apply transition-transform duration-150 active:scale-[0.98];
+  }
+  .btn-success {
+    @apply bg-tertiary text-on-tertiary;
   }
   .fill-icon {
     font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;

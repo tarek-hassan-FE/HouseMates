@@ -9,11 +9,15 @@ import { centsToDisplay } from "@/lib/money";
 import { settleAllDebtsAction } from "@/app/[locale]/(app)/ledger/actions";
 
 export function FinanceStatusCard({
+  netCents,
   youOweCents,
+  youreOwedCents,
   memberCount,
   hasUnsettledDebts,
 }: {
+  netCents: number;
   youOweCents: number;
+  youreOwedCents: number;
   memberCount: number;
   hasUnsettledDebts: boolean;
 }) {
@@ -23,6 +27,7 @@ export function FinanceStatusCard({
   const router = useRouter();
   const [settling, setSettling] = useState(false);
   const isSoloHouse = memberCount <= 1;
+  const netPositive = netCents >= 0;
 
   async function handleSettleAll() {
     if (!confirm(tl("settleAllConfirm"))) return;
@@ -39,7 +44,7 @@ export function FinanceStatusCard({
         className="text-primary/20 absolute top-4 end-4 rotate-12"
         size={64}
       />
-      <div className="relative z-10 mb-6">
+      <div className="relative z-10 mb-4">
         <span className="bg-primary/10 text-primary mb-2 inline-block rounded-full px-3 py-1 text-[10px] font-bold tracking-widest uppercase">
           {t("financeOverview")}
         </span>
@@ -50,33 +55,37 @@ export function FinanceStatusCard({
           <p className="text-body-md text-on-surface-variant">{tl("soloHouseHint")}</p>
         ) : (
           <>
-            <p className="text-body-md text-on-surface-variant">{t("youOwe")}</p>
+            <span className="text-label-md text-on-surface-variant tracking-wider uppercase">
+              {tl("netBalance")}
+            </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-display-lg text-error font-bold">
-                {centsToDisplay(youOweCents, { locale })}
+              <span
+                className={`text-display-lg font-bold ${netPositive ? "text-tertiary-container" : "text-error"}`}
+              >
+                {netPositive ? "+" : ""}
+                {centsToDisplay(Math.abs(netCents), { locale })}
               </span>
-              <span className="text-body-md text-on-surface-variant">
-                {t("unsettled")}
-              </span>
+            </div>
+            <p className="text-body-md text-tertiary mt-1 flex items-center gap-1 font-medium">
+              <MaterialIcon name="trending_up" size={18} />
+              {netPositive ? tl("netPositive") : tl("netNegative")}
+            </p>
+            <div className="mt-6 flex gap-3">
+              <div className="border-outline-variant/40 flex-1 rounded-2xl border bg-surface-container-lowest/80 p-3">
+                <p className="text-label-sm text-outline">{tl("youOwe")}</p>
+                <p className="text-headline-md text-error font-bold">
+                  {centsToDisplay(youOweCents, { locale })}
+                </p>
+              </div>
+              <div className="border-outline-variant/40 flex-1 rounded-2xl border bg-surface-container-lowest/80 p-3">
+                <p className="text-label-sm text-outline">{tl("youreOwed")}</p>
+                <p className="text-headline-md text-tertiary-container font-bold">
+                  {centsToDisplay(youreOwedCents, { locale })}
+                </p>
+              </div>
             </div>
           </>
         )}
-        <div className="border-error/10 bg-error/5 mt-6 flex items-center gap-4 rounded-2xl border p-3">
-          <div className="bg-error/20 text-error flex size-10 items-center justify-center rounded-full">
-            <MaterialIcon name="event_repeat" size={20} />
-          </div>
-          <div>
-            <p className="text-label-sm text-error font-medium uppercase">
-              {t("nextSharedBill")}
-            </p>
-            <p className="text-body-md text-on-surface font-bold">
-              {t("electricityDue")}
-            </p>
-            <p className="text-label-sm text-on-surface-variant mt-0.5">
-              {t("placeholderSoon")}
-            </p>
-          </div>
-        </div>
       </div>
       <div className="relative z-10 mt-8 flex flex-col gap-2">
         {!isSoloHouse && hasUnsettledDebts && (
@@ -84,7 +93,7 @@ export function FinanceStatusCard({
             type="button"
             disabled={settling}
             onClick={handleSettleAll}
-            className="btn-press bg-tertiary text-on-tertiary flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold shadow-md transition-colors disabled:opacity-50"
+            className="btn-press btn-success flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold shadow-md transition-colors disabled:opacity-50"
           >
             <MaterialIcon name="check_circle" />
             {tl("settleAll")}

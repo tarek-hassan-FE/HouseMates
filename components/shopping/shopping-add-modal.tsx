@@ -42,7 +42,7 @@ export function ShoppingAddModal({
         onClick={onClose}
       />
       <div className="bg-surface-container-lowest relative max-h-[min(90dvh,100%)] w-full max-w-lg overflow-y-auto rounded-t-[2rem] shadow-2xl sm:rounded-[2rem]">
-        <div className="bg-secondary text-on-secondary p-8">
+        <div className="bg-secondary-fixed text-on-secondary-fixed p-8">
           <div className="flex items-center justify-between">
             <h2
               id="shopping-modal-title"
@@ -96,7 +96,7 @@ export function ShoppingAddModal({
           <Button
             type="submit"
             disabled={loading}
-            className="btn-press bg-secondary text-on-secondary h-14 w-full rounded-2xl font-bold"
+            className="btn-press bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim h-14 w-full rounded-2xl font-bold"
           >
             {loading ? t("saving") : t("addItemBtn")}
           </Button>

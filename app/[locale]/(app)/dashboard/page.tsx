@@ -6,6 +6,12 @@ import { FinanceStatusCard } from "@/components/dashboard/finance-status-card";
 import { DashboardQuickActions } from "@/components/dashboard/dashboard-quick-actions";
 import { RecentActivityPlaceholder } from "@/components/dashboard/recent-activity-placeholder";
 import { formatDate } from "@/lib/format";
+import {
+  filterUnsettled,
+  netBalanceCents,
+  sumYouOweCents,
+  sumYoureOwedCents,
+} from "@/lib/ledger-balances";
 import { centsToDisplay } from "@/lib/money";
 
 export default async function DashboardPage() {
@@ -62,11 +68,11 @@ export default async function DashboardPage() {
     (members ?? []).map((m) => [m.id, m.avatar_url]),
   );
 
-  const unsettled = (debts ?? []).filter((d) => d.settled_at == null);
-  const iOwe = unsettled
-    .filter((d) => d.debtor_id === session.userId)
-    .reduce((s, d) => s + d.amount_cents, 0);
-  const hasUnsettledDebts = unsettled.length > 0;
+  const debtRows = debts ?? [];
+  const youOweCents = sumYouOweCents(debtRows, session.userId);
+  const youreOwedCents = sumYoureOwedCents(debtRows, session.userId);
+  const netCents = netBalanceCents(debtRows, session.userId);
+  const hasUnsettledDebts = filterUnsettled(debtRows).length > 0;
 
   const entries = (leaderboard ?? []).map((m) => ({
     username: m.username,
@@ -96,7 +102,9 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
         <div className="flex flex-col lg:col-span-5">
           <FinanceStatusCard
-            youOweCents={iOwe}
+            netCents={netCents}
+            youOweCents={youOweCents}
+            youreOwedCents={youreOwedCents}
             memberCount={memberCount ?? 0}
             hasUnsettledDebts={hasUnsettledDebts}
           />

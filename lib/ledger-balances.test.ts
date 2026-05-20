@@ -94,4 +94,18 @@ describe("ledger-balances", () => {
     ];
     assert.equal(filterUnsettled(debts).length, 1);
   });
+
+  it("dashboard finance contract: net equals owed minus owe", () => {
+    const debts = [
+      debt({ debtor_id: userId, creditor_id: bob, amount_cents: 60 }),
+      debt({ debtor_id: bob, creditor_id: userId, amount_cents: 25 }),
+    ];
+    const youOwe = sumYouOweCents(debts, userId);
+    const youreOwed = sumYoureOwedCents(debts, userId);
+    const net = netBalanceCents(debts, userId);
+    assert.equal(youOwe, 60);
+    assert.equal(youreOwed, 25);
+    assert.equal(net, youreOwed - youOwe);
+    assert.equal(filterUnsettled(debts).length, 2);
+  });
 });
