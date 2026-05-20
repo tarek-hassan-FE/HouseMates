@@ -4,7 +4,7 @@
  * Update both when changing prices or adding rewards.
  */
 
-export const REWARD_KEYS = [
+const REWARD_KEYS = [
   "pick_friday_movie",
   "skip_dish_duty",
   "dj_cleanup",
@@ -89,16 +89,8 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
   },
 ];
 
-const REWARD_COSTS: Record<RewardKey, number> = Object.fromEntries(
-  REWARDS_CATALOG.map((r) => [r.key, r.xp]),
-) as Record<RewardKey, number>;
-
 export function isValidRewardKey(key: string): key is RewardKey {
   return REWARD_KEYS.includes(key as RewardKey);
-}
-
-export function getRewardCost(key: RewardKey): number {
-  return REWARD_COSTS[key];
 }
 
 export function getRewardEntry(key: RewardKey): RewardCatalogEntry | undefined {

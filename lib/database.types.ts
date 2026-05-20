@@ -7,8 +7,6 @@ export type ChoreFrequency =
   | "monthly"
   | "once";
 
-export type ChoreCompletionStatus = "pending" | "approved" | "rejected";
-
 export type ExpenseStrategy = "equal" | "exact";
 
 export interface Profile {
@@ -28,18 +26,6 @@ export interface House {
   invite_code: string;
   created_by: string | null;
   created_at: string;
-}
-
-export interface ChoreCompletion {
-  id: string;
-  chore_id: string;
-  house_id: string;
-  submitted_by: string;
-  xp_reward: number;
-  status: ChoreCompletionStatus;
-  submitted_at: string;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
 }
 
 export interface ChorePendingCompletion {
@@ -73,17 +59,6 @@ export interface Expense {
   strategy: ExpenseStrategy;
   created_at: string;
   payer?: { username: string } | null;
-}
-
-export interface DebtLedgerEntry {
-  id: string;
-  house_id: string;
-  debtor_id: string;
-  creditor_id: string;
-  amount_cents: number;
-  expense_id: string | null;
-  settled_at: string | null;
-  created_at: string;
 }
 
 export interface RewardRedemption {

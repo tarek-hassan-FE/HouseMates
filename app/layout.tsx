@@ -31,6 +31,8 @@ const cairo = Cairo({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0058be",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -38,6 +40,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("title"),
     description: t("description"),
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Roomies",
+    },
+    icons: {
+      icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+      apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    },
   };
 }
 

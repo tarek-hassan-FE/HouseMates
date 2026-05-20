@@ -1,17 +1,13 @@
-# HouseMate Harmony
+# Roomies
 
 Gamified chore tracking and shared expense ledger for roommates.
 
 ## Stack
 
 - **Next.js 16** (App Router) + TypeScript + Tailwind CSS v4
-- **shadcn/ui** components styled from [`.stitch/DESIGN.md`](.stitch/DESIGN.md)
+- **shadcn/ui** components with design tokens in [`app/globals.css`](app/globals.css)
 - **Supabase** (Auth, PostgreSQL, RLS)
 - **TanStack Query** (provider wired for Phase 2)
-
-## Design system
-
-Stitch project `13361756046321720259` — tokens and screen references live under [`.stitch/`](.stitch/).
 
 ## Local development
 
@@ -82,7 +78,7 @@ Open **SQL Editor** → New query → paste and run the entire file:
 
 **[`supabase/manual_run_all.sql`](supabase/manual_run_all.sql)** (idempotent — safe to re-run)
 
-You should see: `HouseMate Harmony migrations applied successfully`
+You should see: `Roomies migrations applied successfully`
 
 Apply migrations **in order** on your hosted project (SQL editor or `npx supabase db push`):
 

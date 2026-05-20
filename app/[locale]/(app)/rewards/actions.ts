@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isValidRewardKey } from "@/lib/rewards-catalog";
 
-export type RedeemErrorCode = "insufficientXp" | "invalidReward" | "generic";
+type RedeemErrorCode = "insufficientXp" | "invalidReward" | "generic";
 
 export type RedeemResult =
   | { success: true }

@@ -15,7 +15,7 @@ export type DebtRow = {
   direction: "you_owe" | "owes_you";
 };
 
-export function isUnsettled(debt: { settled_at: string | null }): boolean {
+function isUnsettled(debt: { settled_at: string | null }): boolean {
   return debt.settled_at == null;
 }
 

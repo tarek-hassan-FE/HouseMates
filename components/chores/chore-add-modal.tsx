@@ -167,6 +167,3 @@ export function ChoreFormModal({
     </div>
   );
 }
-
-/** @deprecated Use ChoreFormModal */
-export const ChoreAddModal = ChoreFormModal;

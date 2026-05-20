@@ -1,5 +1,5 @@
 -- =============================================================================
--- HouseMate Harmony — RUN IN SUPABASE SQL EDITOR (Dashboard → SQL → New query)
+-- Roomies — RUN IN SUPABASE SQL EDITOR (Dashboard → SQL → New query)
 -- =============================================================================
 -- Safe to re-run: uses IF NOT EXISTS / DROP IF EXISTS where possible.
 -- If you already have tables, you can run only: manual_run_phase2_only.sql
@@ -817,4 +817,4 @@ GRANT EXECUTE ON FUNCTION public.reject_chore_completion(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.reopen_chore(uuid) TO authenticated;
 
 -- Done
-SELECT 'HouseMate Harmony migrations applied successfully' AS status;
+SELECT 'Roomies migrations applied successfully' AS status;
