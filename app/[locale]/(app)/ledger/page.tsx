@@ -1,0 +1,40 @@
+import { LedgerPanel } from "@/components/ledger/ledger-panel";
+import { requireHouseSession } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
+import type { Expense } from "@/lib/database.types";
+
+export default async function LedgerPage() {
+  const session = await requireHouseSession();
+  const supabase = await createClient();
+
+  const [{ data: expenses }, { data: members }, { data: debts }] =
+    await Promise.all([
+      supabase
+        .from("expenses")
+        .select("*")
+        .eq("house_id", session.house.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .eq("house_id", session.house.id),
+      supabase
+        .from("debt_ledger")
+        .select("amount_cents, debtor_id, creditor_id")
+        .eq("house_id", session.house.id),
+    ]);
+
+  const payerNames = Object.fromEntries(
+    (members ?? []).map((m) => [m.id, m.username]),
+  );
+
+  return (
+    <LedgerPanel
+      expenses={(expenses ?? []) as Expense[]}
+      debts={debts ?? []}
+      members={members ?? []}
+      payerNames={payerNames}
+      userId={session.userId}
+    />
+  );
+}

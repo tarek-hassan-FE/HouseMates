@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HouseMate Harmony - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#eaf1ff",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-container-high": "#dce9ff",
+                        "on-primary-fixed": "#001a42",
+                        "outline-variant": "#c2c6d6",
+                        "tertiary-fixed": "#6bff8f",
+                        "surface": "#f8f9ff",
+                        "on-primary-container": "#fefcff",
+                        "tertiary": "#006b2d",
+                        "on-tertiary-container": "#f7fff3",
+                        "secondary-fixed": "#ffe083",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#00873b",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-tertiary-fixed-variant": "#005321",
+                        "primary": "#0058be",
+                        "surface-container-highest": "#d3e4fe",
+                        "outline": "#727785",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#002109",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#4ae176",
+                        "on-secondary-fixed-variant": "#574500",
+                        "primary-container": "#2170e4",
+                        "on-background": "#0b1c30",
+                        "on-secondary-fixed": "#231b00",
+                        "on-error": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "inverse-primary": "#adc6ff",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "secondary": "#735c00",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "on-secondary-container": "#6f5900",
+                        "surface-tint": "#005ac2",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#cbdbf5",
+                        "secondary-fixed-dim": "#eec200",
+                        "on-surface-variant": "#424754",
+                        "primary-fixed-dim": "#adc6ff",
+                        "inverse-surface": "#213145",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#fed01b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "lg": "40px",
+                        "container-max": "1200px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "md": "24px",
+                        "xl": "64px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .xp-bar-animate {
+            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-md py-sm bg-surface/60 backdrop-blur-md shadow-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary font-headline-md" style="font-size: 32px;">home_work</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">HouseMate Harmony</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs hover:text-primary-container transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-xs hover:text-primary-container transition-colors active:scale-95 duration-200 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<img alt="User Profile Avatar" class="w-10 h-10 rounded-full border-2 border-primary-fixed shadow-sm" data-alt="A close-up high-definition professional portrait avatar of a friendly young person in a brightly lit modern apartment setting. The lighting is soft and natural, emphasizing a cheerful and clean aesthetic. The background is slightly blurred, showing hints of a stylish, organized kitchen. The overall color palette is airy with soft blues and whites, consistent with a premium lifestyle application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI-oW_Xd0YN3KZwv_Lh1H_36Y8l3PoP83lcyp2J1gWlRfgsHo-TKwQipnoFHbaYWbRYDqDl1jltukneka8mYuyKarCnog6mVFCe4cGhQAkrvP3XkoAgwEFxM4OxLlnyZ9DNfAmVh4OIYxXIYTZp9T-T5xsQb2g7yY-PVhm7YEO1GX_Y9pNHoqPdTjgeUr8sAp7_zbg86nN7c2_5e_fO__OCq7-XcBZF8OU-nWjatZrXJ5RThQCgIfhTa2GBnOx57hass45pQ3A8FSL"/>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-full hidden md:flex flex-col p-md z-40 bg-surface w-64 pt-24">
+<div class="flex flex-col gap-xs mb-xl">
+<div class="flex items-center gap-sm p-sm mb-md">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">apartment</span>
+</div>
+<div>
+<h2 class="font-label-md text-label-md text-on-surface">The Penthouse</h2>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Family Room</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-sm px-md py-sm bg-primary-container text-on-primary-container rounded-xl font-bold transition-all active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined fill-icon">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">task_alt</span>
+<span class="font-label-md text-label-md">Chores</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Finances</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label-md text-label-md">Leaderboard</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-xl transition-all active:scale-[0.98] duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">House Settings</span>
+</a>
+</nav>
+</div>
+<button class="mt-auto bg-primary text-on-primary py-md px-md rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-shadow active:scale-95">
+<span class="material-symbols-outlined">add_task</span>
+            Log Chore
+        </button>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-xl px-margin-mobile md:ml-64 md:px-lg max-w-[1400px]">
+<!-- Hero Widget: Weekly Leaderboard Snapshot -->
+<section class="mb-lg">
+<div class="relative overflow-hidden bg-surface-container rounded-3xl p-md md:p-xl shadow-md border-b-4 border-secondary-container">
+<div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl"></div>
+<div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-lg">
+<div class="max-w-md">
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-base">Weekly Leaderboard Snapshot</h1>
+<p class="text-body-lg text-on-surface-variant">The competition is heating up! Alex is currently leading the pack with stellar household contributions.</p>
+</div>
+<div class="flex items-end justify-center gap-md md:gap-xl pt-lg">
+<!-- Rank 2: Sam -->
+<div class="flex flex-col items-center group">
+<div class="relative mb-base">
+<img class="w-16 h-16 rounded-full border-4 border-surface-container-highest shadow-sm group-hover:scale-105 transition-transform" data-alt="A digital portrait of a friendly young man named Sam with a bright smile, wearing a casual mustard yellow hoodie. He is in a modern, sun-drenched living room with minimalist decor. The lighting is warm and inviting, capturing a positive, communal living vibe. The style is clean and high-contrast, fitting a modern tech dashboard interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuKiR-SZPTS9b6B99new2MD6YAOhwDCTFUbS1yVIuIqOK7s9mn1EBEmKyg1vRsp17HkCw4KukKxBHyPAnFK_kvfVi6Y8ZNoCz2fuJ_3ktTZs8psZotYKG2dohQVo_4P41Cg5UIVQiQ8VK1DnIgroyMqLeVKEHXtK7fc2XhYDl7WvPZCbMnuk5pzTKTS_OamVIANgmxg6lZ85zbpNwhx0S3W5ySo1pANeitGAHYw8F33vfGm7wRDUV8K0JGP7oOuYK2TWY4grKKWtyQ"/>
+<div class="absolute -bottom-2 -right-2 bg-surface text-on-surface text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">2nd</div>
+</div>
+<div class="h-24 w-16 md:w-20 bg-primary/40 rounded-t-xl flex flex-col items-center justify-end pb-xs">
+<span class="font-bold text-on-primary-container text-label-md">420</span>
+<span class="text-[10px] text-on-primary-container/80 uppercase">XP</span>
+</div>
+<p class="mt-2 font-bold text-label-md text-on-surface">Sam</p>
+</div>
+<!-- Rank 1: Alex -->
+<div class="flex flex-col items-center group">
+<span class="material-symbols-outlined text-secondary text-3xl mb-1 fill-icon animate-bounce">workspace_premium</span>
+<div class="relative mb-base">
+<img class="w-20 h-20 rounded-full border-4 border-secondary-container shadow-lg group-hover:scale-105 transition-transform" data-alt="A portrait of a cheerful, energetic person named Alex, who is wearing a stylish modern headset and a blue linen shirt. They are positioned in a bright, contemporary workspace with green plants and soft morning light streaming through large windows. The mood is triumphant and optimistic, rendered in a professional, light-mode aesthetic with vibrant accent colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBn1aeRV6vObhDZac5sMdBMIVe89Csoa-wEVpCEdm5i3D44l7UR_tHW6QSxDL5cWvu_s8DfPbmLbwoYJLX9WT_DvuztPGtjxfcDNTVxN6XQs1X73D7dz-0KG91XpBx535Qs43d1XwxryDGrqPictkdOMonugQo8fDpQLjglpiIr-dN3Mg4H8bJa-vkH6RuUmFZDqojSsONKxkEwBbOBKQh01nfMmVHu-oGyCY_73-6ELR0O6x2vdAAIOWdXApiAOpP6w4cJSIDbqxhl"/>
+<div class="absolute -top-3 -right-3 bg-secondary-container text-on-secondary-container w-8 h-8 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+<span class="material-symbols-outlined text-sm fill-icon">crown</span>
+</div>
+</div>
+<div class="h-32 w-20 md:w-24 bg-primary rounded-t-xl flex flex-col items-center justify-end pb-xs">
+<span class="font-bold text-on-primary text-headline-md">450</span>
+<span class="text-xs text-on-primary/80 uppercase tracking-widest">XP</span>
+</div>
+<p class="mt-2 font-extrabold text-label-md text-primary">Alex</p>
+</div>
+<!-- Rank 3: Jordan -->
+<div class="flex flex-col items-center group">
+<div class="relative mb-base">
+<img class="w-16 h-16 rounded-full border-4 border-surface-container-highest shadow-sm group-hover:scale-105 transition-transform" data-alt="A digital portrait of a person named Jordan, with a cool and relaxed demeanor, wearing a light grey sweater. They are sitting in a minimalist apartment balcony area with soft evening light and urban greenery in the background. The visual style is crisp, using a palette of soft neutrals and cool blues to match a high-end application interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBg3aTC3klfYdosu3b0jG7ZldsTXVzTah6a95LbmVLLGLqlYwprQG2zztjU8ye28lyBVOK2GEYxJiZX6KBQzCf3sLjHQY3_EbxUonxwHd_sFjWoyVBDmXsxS-v3J73lMbsmRGrT8OLGt-f86nAmsESXoDmNMrUygB6GVRkfe4deRn1p-Kg1QCEetN9rOA0typEZgGHcP76gfIKPwWKN6KxTiUjRiKakdIxM0F4W4P5Oab8_fdm_pONKRLYeVyWlFI5H9MrRK0o-0qM3"/>
+<div class="absolute -bottom-2 -right-2 bg-surface text-on-surface text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">3rd</div>
+</div>
+<div class="h-16 w-16 md:w-20 bg-primary/20 rounded-t-xl flex flex-col items-center justify-end pb-xs">
+<span class="font-bold text-on-primary-container/70 text-label-md">380</span>
+<span class="text-[10px] text-on-primary-container/60 uppercase">XP</span>
+</div>
+<p class="mt-2 font-bold text-label-md text-on-surface">Jordan</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Financial Summary Card -->
+<div class="lg:col-span-5 flex flex-col">
+<div class="glass-card rounded-3xl p-md md:p-lg flex flex-col h-full shadow-lg relative overflow-hidden">
+<div class="absolute top-0 right-0 p-md">
+<span class="material-symbols-outlined text-primary/20 text-6xl rotate-12">account_balance_wallet</span>
+</div>
+<div class="mb-lg relative z-10">
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-base inline-block">Finance Overview</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mt-sm">Your Status</h3>
+</div>
+<div class="flex-grow flex flex-col justify-center relative z-10">
+<p class="text-body-md text-on-surface-variant">You owe</p>
+<div class="flex items-baseline gap-xs">
+<span class="text-display-lg font-display-lg text-error">$45.00</span>
+<span class="text-body-md text-on-surface-variant">total</span>
+</div>
+<div class="mt-lg p-sm bg-error/5 rounded-2xl border border-error/10 flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-xl">event_repeat</span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-error uppercase">Next Shared Bill</p>
+<p class="text-body-md font-bold text-on-surface">Electricity due in 3 days</p>
+</div>
+</div>
+</div>
+<div class="mt-xl relative z-10">
+<button class="w-full bg-primary text-on-primary py-md rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-primary-container transition-all active:scale-[0.98] shadow-md">
+<span class="material-symbols-outlined">payments</span>
+                            Settle Up
+                        </button>
+</div>
+</div>
+</div>
+<!-- Quick Actions Grid -->
+<div class="lg:col-span-7">
+<div class="h-full flex flex-col gap-gutter">
+<h3 class="font-headline-md text-headline-md text-on-surface">Quick Actions</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md flex-grow">
+<!-- Action: Log Expense -->
+<button class="group bg-surface-container-lowest border border-outline-variant p-md rounded-3xl flex flex-col items-start gap-md hover:border-primary hover:shadow-xl transition-all text-left active:scale-[0.98]">
+<div class="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">receipt_long</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Log an Expense</h4>
+<p class="text-body-md text-on-surface-variant">Split groceries, bills, or rent with everyone.</p>
+</div>
+<div class="mt-auto flex items-center gap-1 text-primary font-bold text-label-md">
+                                Start now <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Action: Complete Chore -->
+<button class="group bg-surface-container-lowest border border-outline-variant p-md rounded-3xl flex flex-col items-start gap-md hover:border-tertiary hover:shadow-xl transition-all text-left active:scale-[0.98]">
+<div class="w-14 h-14 rounded-2xl bg-tertiary-fixed-dim/20 flex items-center justify-center text-tertiary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">task_alt</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface">Complete a Chore</h4>
+<p class="text-body-md text-on-surface-variant">Check off your tasks and earn valuable XP points.</p>
+</div>
+<div class="mt-auto flex items-center gap-1 text-tertiary font-bold text-label-md">
+                                View list <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Action: Add Shopping Item (Full Width on Mobile) -->
+<button class="md:col-span-2 group bg-surface-container-lowest border border-outline-variant p-md rounded-3xl flex items-center gap-lg hover:border-secondary hover:shadow-xl transition-all text-left active:scale-[0.98]">
+<div class="w-14 h-14 shrink-0 rounded-2xl bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">shopping_cart</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-headline-md text-headline-md text-on-surface">Add Shopping Item</h4>
+<p class="text-body-md text-on-surface-variant">Low on milk? Add it to the shared house list.</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Mini Section -->
+<section class="mt-xl">
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-headline-md text-headline-md text-on-surface">Recent Activity</h3>
+<a class="text-primary font-bold text-label-md hover:underline" href="#">View All</a>
+</div>
+<div class="space-y-sm">
+<div class="bg-white/50 border border-outline-variant/30 rounded-2xl p-sm flex items-center justify-between">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full" data-alt="A profile circle of Alex." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwyi7z336beUZYRnCXMXvDoUS6SfnDjHszvDOM_ATFv5RQEz7xTdRUi_c9moPX66CPdW5ovEdZjv-Dc25vnXB4JCk2KdiAm6azwCz6lJswSsZbyfLUVulk4uolCxTGRrTmleNxKAYMycc1ixK9E1hyiAnZAT7cyjhs8220Ggvm8fnIgdQxF9RBEcm7wjO8w57iHUUgymQ42khvImAsXMWU-OwnQJG3qyUTzDiyvHn6bmN2f6nBTQSc9ld0dFApkMkTbXfhwfguNdAl"/>
+<div>
+<p class="text-body-md text-on-surface"><span class="font-bold">Alex</span> cleaned the <span class="font-bold">Kitchen</span></p>
+<p class="text-label-sm text-on-surface-variant">2 hours ago</p>
+</div>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full font-bold text-[10px]">
+                        +25 XP
+                    </div>
+</div>
+<div class="bg-white/50 border border-outline-variant/30 rounded-2xl p-sm flex items-center justify-between">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full" data-alt="A profile circle of Sam." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhcoPM6loGWUyVV3jdnWE4AJSdUaE2NFFhdei3EvdEVHaYZBxdnJ6td7xzzmmjCR-_fynJ0ke9Bo13SkEOi2YcWkgmcO03q9kcs0EBjthS54_4hU-PPKiO-gja5DWBx7yIFw6-A7gYfPsUEi0cxxaFkjo6PVARVXG2NqXOvCafaOxtJObXJEPyZI2ds00jUqE_BS5H7hIijivzV_l2n-sLF11cfelMYxnjOxeIzSvZcbN6KwMFH5d9_k_H-qxavl3IwZg7OKCm0cY0"/>
+<div>
+<p class="text-body-md text-on-surface"><span class="font-bold">Sam</span> added <span class="font-bold">"Laundry Detergent"</span></p>
+<p class="text-label-sm text-on-surface-variant">5 hours ago</p>
+</div>
+</div>
+<div class="text-on-surface-variant">
+<span class="material-symbols-outlined">shopping_bag</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 flex justify-around items-center py-sm z-50">
+<a class="flex flex-col items-center text-primary font-bold" href="#">
+<span class="material-symbols-outlined fill-icon">dashboard</span>
+<span class="text-[10px] uppercase">Dashboard</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">task_alt</span>
+<span class="text-[10px] uppercase">Chores</span>
+</a>
+<div class="relative -top-6">
+<button class="bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[10px] uppercase">Finances</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] uppercase">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for hover effects or loading states
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('mousedown', function() {
+                this.classList.add('scale-95');
+            });
+            el.addEventListener('mouseup', function() {
+                this.classList.remove('scale-95');
+            });
+            el.addEventListener('mouseleave', function() {
+                this.classList.remove('scale-95');
+            });
+        });
+
+        // Simple floating animation for the crown
+        const crown = document.querySelector('.material-symbols-outlined.text-secondary.animate-bounce');
+        if(crown) {
+            crown.style.animationDuration = '2s';
+        }
+    </script>
+</body></html>

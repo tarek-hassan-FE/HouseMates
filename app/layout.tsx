@@ -1,0 +1,73 @@
+import type { Metadata, Viewport } from "next";
+import { Inter, Plus_Jakarta_Sans, Cairo } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import {
+  getLocale,
+  getMessages,
+  getTranslations,
+} from "next-intl/server";
+import { QueryProvider } from "@/components/providers/query-provider";
+import "./globals.css";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const isRtl = locale === "ar";
+
+  return (
+    <html
+      lang={locale}
+      dir={isRtl ? "rtl" : "ltr"}
+      className={`${plusJakarta.variable} ${inter.variable} ${cairo.variable} h-full antialiased`}
+    >
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body
+        className={`min-h-full overflow-x-hidden ${isRtl ? "font-[family-name:var(--font-cairo)]" : ""}`}
+      >
+        <NextIntlClientProvider messages={messages}>
+          <QueryProvider>{children}</QueryProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
+}

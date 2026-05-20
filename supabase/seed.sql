@@ -1,0 +1,1 @@
+-- Optional seed data for local development (Phase 1: empty)
