@@ -128,3 +128,39 @@ export async function reopenChoreAction(choreId: string): Promise<ActionResult> 
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export async function approveChoreCompletionAction(
+  completionId: string,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin.ok) return { success: false, error: admin.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("approve_chore_completion", {
+    p_completion_id: completionId,
+  });
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/chores");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function rejectChoreCompletionAction(
+  completionId: string,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!admin.ok) return { success: false, error: admin.error };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reject_chore_completion", {
+    p_completion_id: completionId,
+  });
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/chores");
+  revalidatePath("/dashboard");
+  return { success: true };
+}

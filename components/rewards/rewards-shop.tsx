@@ -6,10 +6,9 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { MaterialIcon } from "@/components/design/material-icon";
-import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import {
   REWARDS_CATALOG,
-  type RewardCatalogEntry,
   type RewardKey,
 } from "@/lib/rewards-catalog";
 import { redeemRewardAction } from "@/app/[locale]/(app)/rewards/actions";
@@ -22,11 +21,8 @@ type RewardsShopProps = {
 
 export function RewardsShop({ totalXp, onRedeemed }: RewardsShopProps) {
   const t = useTranslations("rewards");
-  const tc = useTranslations("common");
   const router = useRouter();
-  const [confirmReward, setConfirmReward] = useState<RewardCatalogEntry | null>(
-    null,
-  );
+  const confirm = useConfirm();
   const [celebratingKey, setCelebratingKey] = useState<RewardKey | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
@@ -39,7 +35,6 @@ export function RewardsShop({ totalXp, onRedeemed }: RewardsShopProps) {
     },
     onSuccess: (_data, key) => {
       const entry = REWARDS_CATALOG.find((r) => r.key === key);
-      setConfirmReward(null);
       setCelebratingKey(key);
       setErrorCode(null);
       if (entry) onRedeemed(entry.xp);
@@ -50,6 +45,23 @@ export function RewardsShop({ totalXp, onRedeemed }: RewardsShopProps) {
       setErrorCode(err.message);
     },
   });
+
+  async function handleRedeem(key: RewardKey) {
+    const reward = REWARDS_CATALOG.find((r) => r.key === key);
+    if (!reward) return;
+    if (
+      !(await confirm({
+        title: t("confirmTitle"),
+        message: t("confirmBody", {
+          cost: reward.xp,
+          reward: t(reward.titleKey),
+        }),
+        confirmLabel: t("confirmRedeem"),
+      }))
+    )
+      return;
+    redeemMutation.mutate(key);
+  }
 
   return (
     <>
@@ -116,7 +128,7 @@ export function RewardsShop({ totalXp, onRedeemed }: RewardsShopProps) {
               <button
                 type="button"
                 disabled={!canAfford || redeemMutation.isPending}
-                onClick={() => setConfirmReward(reward)}
+                onClick={() => handleRedeem(reward.key as RewardKey)}
                 className={cn(
                   "btn-press w-full rounded-xl py-3 font-bold transition-all",
                   canAfford
@@ -131,56 +143,6 @@ export function RewardsShop({ totalXp, onRedeemed }: RewardsShopProps) {
           );
         })}
       </div>
-
-      {confirmReward && (
-        <div
-          className="bg-foreground/40 fixed inset-0 z-[60] flex items-end justify-center overscroll-contain p-4 backdrop-blur-sm sm:items-center"
-          role="dialog"
-          aria-modal
-          aria-labelledby="redeem-modal-title"
-        >
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label={tc("closeDialog")}
-            onClick={() => setConfirmReward(null)}
-          />
-          <div className="bg-surface-container-lowest relative z-10 w-full max-w-md rounded-[1.5rem] p-6 shadow-xl">
-            <h3
-              id="redeem-modal-title"
-              className="text-headline-md text-on-surface mb-2"
-            >
-              {t("confirmTitle")}
-            </h3>
-            <p className="text-body-md text-on-surface-variant mb-6">
-              {t("confirmBody", {
-                cost: confirmReward.xp,
-                reward: t(confirmReward.titleKey),
-              })}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setConfirmReward(null)}
-              >
-                {t("cancel")}
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={redeemMutation.isPending}
-                onClick={() =>
-                  redeemMutation.mutate(confirmReward.key as RewardKey)
-                }
-              >
-                {redeemMutation.isPending ? t("redeeming") : t("confirmRedeem")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

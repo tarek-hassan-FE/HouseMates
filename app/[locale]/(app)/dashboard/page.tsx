@@ -23,6 +23,7 @@ export default async function DashboardPage() {
   const [
     { data: leaderboard },
     { data: chores },
+    { data: pendingCompletions },
     { data: debts },
     { count: memberCount },
     { data: recentExpenses },
@@ -35,9 +36,14 @@ export default async function DashboardPage() {
       .limit(3),
     supabase
       .from("chores")
-      .select("id, title, xp_reward, last_completed_at")
+      .select("id, last_completed_at")
       .eq("house_id", session.house.id)
       .is("last_completed_at", null),
+    supabase
+      .from("chore_completions")
+      .select("chore_id")
+      .eq("house_id", session.house.id)
+      .eq("status", "pending"),
     supabase
       .from("debt_ledger")
       .select(
@@ -80,7 +86,13 @@ export default async function DashboardPage() {
     avatar_url: m.avatar_url,
   }));
 
-  const pendingChores = (chores ?? []).length;
+  const pendingChoreIds = new Set(
+    (pendingCompletions ?? []).map((c) => c.chore_id),
+  );
+  const pendingChores = (chores ?? []).filter(
+    (c) => !pendingChoreIds.has(c.id),
+  ).length;
+  const pendingApprovals = (pendingCompletions ?? []).length;
   const leader = entries[0];
 
   const activityRows = (recentExpenses ?? []).map((expense) => ({
@@ -112,6 +124,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-7">
           <DashboardQuickActions
             pendingChoresCount={pendingChores}
+            pendingApprovalsCount={session.isAdmin ? pendingApprovals : 0}
             memberCount={memberCount ?? 0}
           />
         </div>

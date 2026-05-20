@@ -8,9 +8,11 @@ import { createShoppingItemAction } from "@/app/[locale]/(app)/ledger/actions";
 
 export function DashboardQuickActions({
   pendingChoresCount,
+  pendingApprovalsCount = 0,
   memberCount,
 }: {
   pendingChoresCount: number;
+  pendingApprovalsCount?: number;
   memberCount: number;
 }) {
   const router = useRouter();
@@ -38,6 +40,7 @@ export function DashboardQuickActions({
     <>
       <QuickActionGrid
         pendingChoresCount={pendingChoresCount}
+        pendingApprovalsCount={pendingApprovalsCount}
         onAddShopping={() => setModalOpen(true)}
       />
       <ShoppingAddModal

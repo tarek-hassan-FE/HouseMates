@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { useHouse } from "@/components/providers/house-context";
 import { LocaleSwitcher } from "@/components/locale/locale-switcher";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function SettingsPanel({
   const router = useRouter();
   const t = useTranslations("settings");
   const tc = useTranslations("common");
+  const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState(house.invite_code);
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,14 @@ export function SettingsPanel({
   }
 
   async function handleRemove(userId: string) {
-    if (!confirm(t("removeConfirm"))) return;
+    if (
+      !(await confirm({
+        message: t("removeConfirm"),
+        confirmLabel: tc("delete"),
+        destructive: true,
+      }))
+    )
+      return;
     setLoading(true);
     const result = await removeMemberAction(userId);
     setLoading(false);
@@ -65,7 +74,7 @@ export function SettingsPanel({
   }
 
   async function handleTransfer(userId: string) {
-    if (!confirm(t("transferConfirm"))) return;
+    if (!(await confirm({ message: t("transferConfirm") }))) return;
     setLoading(true);
     const result = await transferAdminAction(userId);
     setLoading(false);

@@ -6,6 +6,7 @@ import {
   getMessages,
   getTranslations,
 } from "next-intl/server";
+import { ConfirmProvider } from "@/components/providers/confirm-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
@@ -65,7 +66,9 @@ export default async function RootLayout({
         className={`min-h-full overflow-x-hidden ${isRtl ? "font-[family-name:var(--font-cairo)]" : ""}`}
       >
         <NextIntlClientProvider messages={messages}>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { MaterialIcon } from "@/components/design/material-icon";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { centsToDisplay } from "@/lib/money";
 import { settleAllDebtsAction } from "@/app/[locale]/(app)/ledger/actions";
 
@@ -24,13 +25,20 @@ export function FinanceStatusCard({
   const locale = useLocale();
   const t = useTranslations("dashboard");
   const tl = useTranslations("ledger");
+  const confirm = useConfirm();
   const router = useRouter();
   const [settling, setSettling] = useState(false);
   const isSoloHouse = memberCount <= 1;
   const netPositive = netCents >= 0;
 
   async function handleSettleAll() {
-    if (!confirm(tl("settleAllConfirm"))) return;
+    if (
+      !(await confirm({
+        message: tl("settleAllConfirm"),
+        confirmLabel: tl("settleAll"),
+      }))
+    )
+      return;
     setSettling(true);
     const result = await settleAllDebtsAction();
     setSettling(false);

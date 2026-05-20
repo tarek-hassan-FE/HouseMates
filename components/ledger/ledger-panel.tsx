@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { StatusBadge } from "@/components/design/status-badge";
@@ -56,6 +57,7 @@ export function LedgerPanel({
   const locale = useLocale();
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
+  const confirm = useConfirm();
   const { isAdmin } = useHouse();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +108,14 @@ export function LedgerPanel({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t("deleteExpenseConfirm"))) return;
+    if (
+      !(await confirm({
+        message: t("deleteExpenseConfirm"),
+        confirmLabel: tc("delete"),
+        destructive: true,
+      }))
+    )
+      return;
     setLoading(true);
     const result = await deleteExpenseAction(id);
     setLoading(false);
@@ -124,7 +133,13 @@ export function LedgerPanel({
   }
 
   async function handleSettleAll() {
-    if (!confirm(t("settleAllConfirm"))) return;
+    if (
+      !(await confirm({
+        message: t("settleAllConfirm"),
+        confirmLabel: t("settleAll"),
+      }))
+    )
+      return;
     setLoading(true);
     setError(null);
     const result = await settleAllDebtsAction();

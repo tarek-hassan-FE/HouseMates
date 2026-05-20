@@ -6,9 +6,11 @@ import { MaterialIcon } from "@/components/design/material-icon";
 
 export function QuickActionGrid({
   pendingChoresCount,
+  pendingApprovalsCount = 0,
   onAddShopping,
 }: {
   pendingChoresCount: number;
+  pendingApprovalsCount?: number;
   onAddShopping?: () => void;
 }) {
   const t = useTranslations("dashboard");
@@ -52,9 +54,13 @@ export function QuickActionGrid({
               {t("completeChore")}
             </h4>
             <p className="text-body-md text-on-surface-variant">
-              {pendingChoresCount > 0
-                ? t("choresWaiting", { count: pendingChoresCount })
-                : t("allCaughtUp")}
+              {pendingApprovalsCount > 0
+                ? t("choresApprovalsWaiting", {
+                    count: pendingApprovalsCount,
+                  })
+                : pendingChoresCount > 0
+                  ? t("choresWaiting", { count: pendingChoresCount })
+                  : t("allCaughtUp")}
             </p>
           </div>
           <span className="text-label-md text-tertiary mt-auto flex items-center gap-1 font-bold">

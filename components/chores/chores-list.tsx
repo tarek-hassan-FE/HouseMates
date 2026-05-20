@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useConfirm } from "@/components/providers/confirm-provider";
 import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { ChoreHubHero } from "@/components/chores/chore-hub-hero";
@@ -13,10 +14,12 @@ import { ChoreFormModal } from "@/components/chores/chore-add-modal";
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries/keys";
 import { choreIconName } from "@/lib/chore-icons";
-import type { Chore, Profile } from "@/lib/database.types";
+import type { Chore, ChorePendingCompletion, Profile } from "@/lib/database.types";
 import {
+  approveChoreCompletionAction,
   createChoreAction,
   deleteChoreAction,
+  rejectChoreCompletionAction,
   reopenChoreAction,
   updateChoreAction,
 } from "@/app/[locale]/(app)/chores/actions";
@@ -24,14 +27,38 @@ import { cn } from "@/lib/utils";
 
 async function fetchChores(houseId: string): Promise<Chore[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("chores")
-    .select("*")
-    .eq("house_id", houseId)
-    .order("created_at", { ascending: false });
+  const [choresRes, completionsRes] = await Promise.all([
+    supabase
+      .from("chores")
+      .select("*")
+      .eq("house_id", houseId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("chore_completions")
+      .select("id, chore_id, submitted_by, submitted_at, status")
+      .eq("house_id", houseId)
+      .eq("status", "pending"),
+  ]);
 
-  if (error) throw error;
-  return (data ?? []) as Chore[];
+  if (choresRes.error) throw choresRes.error;
+  if (completionsRes.error) throw completionsRes.error;
+
+  const pendingByChoreId = Object.fromEntries(
+    (completionsRes.data ?? []).map((c) => [
+      c.chore_id,
+      {
+        id: c.id,
+        submitted_by: c.submitted_by,
+        submitted_at: c.submitted_at,
+        status: "pending" as const,
+      } satisfies ChorePendingCompletion,
+    ]),
+  );
+
+  return ((choresRes.data ?? []) as Chore[]).map((chore) => ({
+    ...chore,
+    pending_completion: pendingByChoreId[chore.id] ?? null,
+  }));
 }
 
 function computeRank(members: Profile[], profileId: string): number {
@@ -69,6 +96,12 @@ function ChoreMetaChips({
           {memberMap[chore.assigned_to]}
         </span>
       )}
+      {chore.pending_completion && (
+        <span className="bg-tertiary-container text-on-tertiary-container text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
+          <MaterialIcon name="hourglass_top" size={14} />
+          {t("awaitingApproval")}
+        </span>
+      )}
       <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
         <MaterialIcon name="calendar_today" size={14} />
         {freqLabel}
@@ -97,7 +130,7 @@ function AdminChoreActions({
       <button
         type="button"
         onClick={onEdit}
-        className="text-primary text-label-sm hover:underline"
+        className="text-primary text-label-sm hover:underline py-2 px-4"
       >
         {tc("edit")}
       </button>
@@ -130,10 +163,14 @@ export function ChoresList({ members }: { members: Profile[] }) {
   const format = useFormatter();
   const t = useTranslations("chores");
   const tc = useTranslations("common");
+  const confirm = useConfirm();
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const [celebrationMode, setCelebrationMode] = useState<"completed" | "submitted">(
+    "completed",
+  );
 
   useEffect(() => {
     if (searchParams.get("add") === "1" && isAdmin) {
@@ -149,17 +186,57 @@ export function ChoresList({ members }: { members: Profile[] }) {
 
   const activeChores = chores.filter((c) => !c.last_completed_at);
   const completedChores = chores.filter((c) => c.last_completed_at);
+  const pendingApprovalChores = activeChores.filter((c) => c.pending_completion);
   const rank = computeRank(members, profile.id);
 
-  const completeMutation = useMutation({
+  const invalidateChores = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
+    router.refresh();
+  };
+
+  const claimMutation = useMutation({
     mutationFn: async (choreId: string) => {
       const supabase = createClient();
-      const { error } = await supabase.rpc("complete_chore", {
+      const { error } = await supabase.rpc("claim_chore", {
         p_chore_id: choreId,
       });
       if (error) throw error;
     },
     onMutate: async (choreId) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.chores(house.id),
+      });
+      const previous = queryClient.getQueryData<Chore[]>(
+        queryKeys.chores(house.id),
+      );
+      queryClient.setQueryData<Chore[]>(queryKeys.chores(house.id), (old) =>
+        (old ?? []).map((c) =>
+          c.id === choreId ? { ...c, assigned_to: profile.id } : c,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          queryKeys.chores(house.id),
+          context.previous,
+        );
+      }
+    },
+    onSettled: invalidateChores,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (choreId: string) => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("submit_chore_completion", {
+        p_chore_id: choreId,
+      });
+      if (error) throw error;
+    },
+    onMutate: async (choreId) => {
+      setCelebrationMode("submitted");
       setCelebratingId(choreId);
       await queryClient.cancelQueries({
         queryKey: queryKeys.chores(house.id),
@@ -172,8 +249,12 @@ export function ChoresList({ members }: { members: Profile[] }) {
           c.id === choreId
             ? {
                 ...c,
-                last_completed_at: new Date().toISOString(),
-                last_completed_by: profile.id,
+                pending_completion: {
+                  id: "optimistic",
+                  submitted_by: profile.id,
+                  submitted_at: new Date().toISOString(),
+                  status: "pending" as const,
+                },
               }
             : c,
         ),
@@ -191,16 +272,72 @@ export function ChoresList({ members }: { members: Profile[] }) {
     },
     onSettled: () => {
       setTimeout(() => setCelebratingId(null), 600);
-      queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
-      router.refresh();
+      invalidateChores();
     },
   });
 
-  const canComplete = (chore: Chore) => {
-    if (chore.last_completed_at) return false;
-    if (isAdmin) return true;
-    return chore.assigned_to === profile.id;
-  };
+  const completeMutation = useMutation({
+    mutationFn: async (choreId: string) => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("complete_chore", {
+        p_chore_id: choreId,
+      });
+      if (error) throw error;
+    },
+    onMutate: async (choreId) => {
+      setCelebrationMode("completed");
+      setCelebratingId(choreId);
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.chores(house.id),
+      });
+      const previous = queryClient.getQueryData<Chore[]>(
+        queryKeys.chores(house.id),
+      );
+      const chore = (previous ?? []).find((c) => c.id === choreId);
+      const recipient = chore?.assigned_to ?? profile.id;
+      queryClient.setQueryData<Chore[]>(queryKeys.chores(house.id), (old) =>
+        (old ?? []).map((c) =>
+          c.id === choreId
+            ? {
+                ...c,
+                last_completed_at: new Date().toISOString(),
+                last_completed_by: recipient,
+                pending_completion: null,
+              }
+            : c,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      setCelebratingId(null);
+      if (context?.previous) {
+        queryClient.setQueryData(
+          queryKeys.chores(house.id),
+          context.previous,
+        );
+      }
+    },
+    onSettled: () => {
+      setTimeout(() => setCelebratingId(null), 600);
+      invalidateChores();
+    },
+  });
+
+  const canClaim = (chore: Chore) =>
+    !isAdmin &&
+    !chore.assigned_to &&
+    !chore.pending_completion &&
+    !chore.last_completed_at;
+
+  const canSubmit = (chore: Chore) =>
+    !isAdmin &&
+    chore.assigned_to === profile.id &&
+    !chore.pending_completion &&
+    !chore.last_completed_at;
+
+  const canAdminComplete = (chore: Chore) =>
+    isAdmin && !chore.pending_completion && !chore.last_completed_at;
 
   function openEditForm(chore: Chore) {
     setFormMode("edit");
@@ -224,8 +361,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
       return;
     }
     closeForm();
-    queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
-    router.refresh();
+    invalidateChores();
   }
 
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
@@ -241,28 +377,65 @@ export function ChoresList({ members }: { members: Profile[] }) {
       return;
     }
     closeForm();
-    queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
-    router.refresh();
+    invalidateChores();
   }
 
   async function handleDelete(choreId: string) {
-    if (!confirm(t("deleteChoreConfirm"))) return;
+    if (
+      !(await confirm({
+        message: t("deleteChoreConfirm"),
+        confirmLabel: tc("delete"),
+        destructive: true,
+      }))
+    )
+      return;
     const result = await deleteChoreAction(choreId);
     if (!result.success) setFormError(result.error);
-    else {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
-      router.refresh();
-    }
+    else invalidateChores();
   }
 
   async function handleReopen(choreId: string) {
-    if (!confirm(t("reopenChoreConfirm"))) return;
+    if (
+      !(await confirm({
+        message: t("reopenChoreConfirm"),
+        destructive: true,
+      }))
+    )
+      return;
     const result = await reopenChoreAction(choreId);
     if (!result.success) setFormError(result.error);
-    else {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
-      router.refresh();
-    }
+    else invalidateChores();
+  }
+
+  async function handleApprove(chore: Chore) {
+    const completionId = chore.pending_completion?.id;
+    if (!completionId) return;
+    if (
+      !(await confirm({
+        message: t("approveConfirm", { xp: chore.xp_reward }),
+        confirmLabel: t("approve"),
+      }))
+    )
+      return;
+    const result = await approveChoreCompletionAction(completionId);
+    if (!result.success) setFormError(result.error);
+    else invalidateChores();
+  }
+
+  async function handleReject(chore: Chore) {
+    const completionId = chore.pending_completion?.id;
+    if (!completionId) return;
+    if (
+      !(await confirm({
+        message: t("rejectConfirm"),
+        confirmLabel: t("reject"),
+        destructive: true,
+      }))
+    )
+      return;
+    const result = await rejectChoreCompletionAction(completionId);
+    if (!result.success) setFormError(result.error);
+    else invalidateChores();
   }
 
   function formatCompletedDate(iso: string) {
@@ -271,6 +444,60 @@ export function ChoresList({ members }: { members: Profile[] }) {
       day: "numeric",
       year: "numeric",
     });
+  }
+
+  function renderPrimaryAction(chore: Chore) {
+    if (canClaim(chore)) {
+      return (
+        <button
+          type="button"
+          disabled={claimMutation.isPending}
+          onClick={() => claimMutation.mutate(chore.id)}
+          className="btn-press btn-secondary text-label-md min-w-[4.5rem] rounded-xl px-4 py-2 font-bold shadow-sm"
+        >
+          {t("claim")}
+        </button>
+      );
+    }
+
+    if (canSubmit(chore)) {
+      return (
+        <button
+          type="button"
+          disabled={submitMutation.isPending}
+          onClick={() => submitMutation.mutate(chore.id)}
+          className="btn-press btn-primary text-label-md min-w-[4.5rem] rounded-xl px-4 py-2 font-bold shadow-sm transition-colors hover:brightness-95"
+        >
+          {t("done")}
+        </button>
+      );
+    }
+
+    if (
+      !isAdmin &&
+      chore.pending_completion?.submitted_by === profile.id
+    ) {
+      return (
+        <span className="bg-tertiary-container text-on-tertiary-container text-label-sm rounded-xl px-3 py-2 font-semibold">
+          {t("awaitingApproval")}
+        </span>
+      );
+    }
+
+    if (canAdminComplete(chore)) {
+      return (
+        <button
+          type="button"
+          disabled={completeMutation.isPending}
+          onClick={() => completeMutation.mutate(chore.id)}
+          className="btn-press btn-primary text-label-md min-w-[4.5rem] rounded-xl px-4 py-2 font-bold shadow-sm transition-colors hover:brightness-95"
+        >
+          {t("done")}
+        </button>
+      );
+    }
+
+    return null;
   }
 
   if (isLoading) {
@@ -285,6 +512,19 @@ export function ChoresList({ members }: { members: Profile[] }) {
 
       <div className="grid grid-cols-1 gap-gutter xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-8">
+          {isAdmin && pendingApprovalChores.length > 0 && (
+            <div className="bg-tertiary-container/30 border-outline-variant rounded-[1.5rem] border px-4 py-3">
+              <p className="text-label-md text-on-surface font-semibold">
+                {t("pendingApprovals")}
+              </p>
+              <p className="text-body-sm text-on-surface-variant mt-0.5">
+                {t("pendingApprovalsCount", {
+                  count: pendingApprovalChores.length,
+                })}
+              </p>
+            </div>
+          )}
+
           <div className="flex items-end justify-between px-2">
             <h3 className="text-headline-md text-on-surface flex items-center gap-2">
               <MaterialIcon name="assignment" className="text-primary" />
@@ -310,13 +550,15 @@ export function ChoresList({ members }: { members: Profile[] }) {
             {activeChores.map((chore) => {
               const icon = choreIconName(chore.title);
               const isCelebrating = celebratingId === chore.id;
+              const submitterName = chore.pending_completion
+                ? memberMap[chore.pending_completion.submitted_by]
+                : null;
 
               return (
                 <li
                   key={chore.id}
                   className={cn(
-                    "bg-surface-container-lowest border-secondary-container relative flex flex-col gap-4 rounded-[1.5rem] border-b-4 p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between",
-                    isCelebrating && "border-tertiary-fixed-dim",
+                    "bg-surface-container-lowest border-outline-variant/20 relative flex flex-col gap-3 rounded-[1.5rem] border border-b-4 p-4 shadow-sm transition-shadow hover:shadow-md",
                   )}
                 >
                   {isCelebrating && (
@@ -326,47 +568,61 @@ export function ChoresList({ members }: { members: Profile[] }) {
                         className="me-2"
                         size={32}
                       />
-                      {t("choreCompleted")}
+                      {celebrationMode === "submitted"
+                        ? t("submittedForApproval")
+                        : t("choreCompleted")}
                     </div>
                   )}
-                  <div className="flex min-w-0 items-center gap-4">
-                    <div className="bg-secondary-container/20 text-secondary flex size-14 shrink-0 items-center justify-center rounded-2xl">
-                      <MaterialIcon name={icon} size={32} />
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="bg-secondary-container/20 text-secondary flex size-12 shrink-0 items-center justify-center rounded-2xl sm:size-14">
+                      <MaterialIcon name={icon} size={28} />
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="text-body-lg text-on-surface font-bold">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-body-lg text-on-surface line-clamp-2 font-bold">
                         {chore.title}
                       </h4>
                       <ChoreMetaChips chore={chore} memberMap={memberMap} t={t} />
+                      {isAdmin && submitterName && (
+                        <p className="text-on-surface-variant text-label-sm mt-1">
+                          {t("submittedBy", { name: submitterName })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="bg-secondary-fixed/30 text-on-secondary-fixed text-label-sm rounded-full px-2.5 py-0.5 font-bold">
+                        +{chore.xp_reward} XP
+                      </span>
+                      {renderPrimaryAction(chore)}
                     </div>
                   </div>
-                  <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
-                    <span className="text-body-lg text-secondary text-center font-bold sm:text-end">
-                      +{chore.xp_reward} XP
-                    </span>
-                    <button
-                      type="button"
-                      disabled={
-                        !canComplete(chore) || completeMutation.isPending
-                      }
-                      onClick={() => completeMutation.mutate(chore.id)}
-                      className={cn(
-                        "btn-press bg-primary text-primary-foreground text-label-md w-full rounded-xl px-6 py-2 font-bold transition-all hover:bg-primary-container sm:w-auto",
-                        !canComplete(chore) &&
-                          "cursor-not-allowed opacity-40",
+                  {isAdmin && (
+                    <div className="border-outline-variant/20 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                      {chore.pending_completion && (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(chore)}
+                            className="btn-press bg-primary text-on-primary text-label-sm rounded-xl px-4 py-2 font-bold"
+                          >
+                            {t("approve")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReject(chore)}
+                            className="text-error text-label-sm hover:underline px-4 py-2"
+                          >
+                            {t("reject")}
+                          </button>
+                        </div>
                       )}
-                    >
-                      {t("done")}
-                    </button>
-                    {isAdmin && (
                       <AdminChoreActions
                         onEdit={() => openEditForm(chore)}
                         onDelete={() => handleDelete(chore.id)}
                         t={t}
                         tc={tc}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -382,6 +638,9 @@ export function ChoresList({ members }: { members: Profile[] }) {
                   const icon = choreIconName(chore.title);
                   const completedDate = chore.last_completed_at
                     ? formatCompletedDate(chore.last_completed_at)
+                    : null;
+                  const completerName = chore.last_completed_by
+                    ? memberMap[chore.last_completed_by]
                     : null;
 
                   return (
@@ -405,6 +664,11 @@ export function ChoresList({ members }: { members: Profile[] }) {
                           {completedDate && (
                             <p className="text-on-surface-variant text-label-sm mt-1">
                               {t("completedOn", { date: completedDate })}
+                            </p>
+                          )}
+                          {completerName && (
+                            <p className="text-on-surface-variant text-label-sm mt-0.5">
+                              {t("completedBy", { name: completerName })}
                             </p>
                           )}
                         </div>

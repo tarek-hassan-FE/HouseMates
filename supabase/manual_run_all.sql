@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.chores (
   frequency public.chore_frequency NOT NULL DEFAULT 'weekly',
   assigned_to uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
   last_completed_at timestamptz,
+  last_completed_by uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -333,17 +334,22 @@ DECLARE
   v_house_id uuid;
   v_xp integer;
   v_assigned_to uuid;
+  v_completed_at timestamptz;
+  v_recipient uuid;
 BEGIN
   IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
-  SELECT house_id, xp_reward, assigned_to INTO v_house_id, v_xp, v_assigned_to
+  IF NOT public.is_house_admin() THEN RAISE EXCEPTION 'Only admins can instantly complete chores'; END IF;
+  SELECT house_id, xp_reward, assigned_to, last_completed_at INTO v_house_id, v_xp, v_assigned_to, v_completed_at
   FROM public.chores WHERE id = p_chore_id;
   IF v_house_id IS NULL THEN RAISE EXCEPTION 'Chore not found'; END IF;
   IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Chore not in your house'; END IF;
-  IF NOT public.is_house_admin() AND v_assigned_to <> v_user_id THEN
-    RAISE EXCEPTION 'You can only complete chores assigned to you';
+  IF v_completed_at IS NOT NULL THEN RAISE EXCEPTION 'Chore is already completed'; END IF;
+  IF EXISTS (SELECT 1 FROM public.chore_completions WHERE chore_id = p_chore_id AND status = 'pending') THEN
+    RAISE EXCEPTION 'Approve or reject the pending completion first';
   END IF;
-  UPDATE public.chores SET last_completed_at = now() WHERE id = p_chore_id;
-  UPDATE public.profiles SET total_xp = total_xp + v_xp WHERE id = coalesce(v_assigned_to, v_user_id);
+  v_recipient := coalesce(v_assigned_to, v_user_id);
+  UPDATE public.chores SET last_completed_at = now(), last_completed_by = v_recipient WHERE id = p_chore_id;
+  UPDATE public.profiles SET total_xp = total_xp + v_xp WHERE id = v_recipient;
 END;
 $$;
 
@@ -638,6 +644,177 @@ $$;
 
 REVOKE ALL ON FUNCTION public.redeem_reward(text) FROM public;
 GRANT EXECUTE ON FUNCTION public.redeem_reward(text) TO authenticated;
+
+-- -----------------------------------------------------------------------------
+-- PART 6: Chore claim, submit, and admin approval
+-- -----------------------------------------------------------------------------
+
+ALTER TABLE public.chores
+  ADD COLUMN IF NOT EXISTS last_completed_by uuid REFERENCES public.profiles (id) ON DELETE SET NULL;
+
+DO $$ BEGIN
+  CREATE TYPE public.chore_completion_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.chore_completions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  chore_id uuid NOT NULL REFERENCES public.chores (id) ON DELETE CASCADE,
+  house_id uuid NOT NULL REFERENCES public.houses (id) ON DELETE CASCADE,
+  submitted_by uuid NOT NULL REFERENCES public.profiles (id) ON DELETE CASCADE,
+  xp_reward integer NOT NULL CHECK (xp_reward >= 0),
+  status public.chore_completion_status NOT NULL DEFAULT 'pending',
+  submitted_at timestamptz NOT NULL DEFAULT now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid REFERENCES public.profiles (id) ON DELETE SET NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS chore_completions_one_pending_per_chore
+  ON public.chore_completions (chore_id)
+  WHERE (status = 'pending');
+
+CREATE INDEX IF NOT EXISTS chore_completions_house_status_idx
+  ON public.chore_completions (house_id, status);
+
+ALTER TABLE public.chore_completions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "chore_completions_select_house" ON public.chore_completions;
+CREATE POLICY "chore_completions_select_house"
+  ON public.chore_completions FOR SELECT
+  TO authenticated
+  USING (house_id = public.user_house_id());
+
+CREATE OR REPLACE FUNCTION public.claim_chore(p_chore_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_assigned_to uuid;
+  v_completed_at timestamptz;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF public.is_house_admin() THEN RAISE EXCEPTION 'Admins cannot claim chores'; END IF;
+  SELECT house_id, assigned_to, last_completed_at INTO v_house_id, v_assigned_to, v_completed_at
+  FROM public.chores WHERE id = p_chore_id;
+  IF v_house_id IS NULL THEN RAISE EXCEPTION 'Chore not found'; END IF;
+  IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Chore not in your house'; END IF;
+  IF v_completed_at IS NOT NULL THEN RAISE EXCEPTION 'Chore is already completed'; END IF;
+  IF v_assigned_to IS NOT NULL THEN RAISE EXCEPTION 'Chore is already assigned'; END IF;
+  IF EXISTS (SELECT 1 FROM public.chore_completions WHERE chore_id = p_chore_id AND status = 'pending') THEN
+    RAISE EXCEPTION 'Chore has a pending completion';
+  END IF;
+  UPDATE public.chores SET assigned_to = v_user_id WHERE id = p_chore_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.submit_chore_completion(p_chore_id uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_assigned_to uuid;
+  v_xp integer;
+  v_completed_at timestamptz;
+  v_completion_id uuid;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF public.is_house_admin() THEN RAISE EXCEPTION 'Admins must use complete_chore'; END IF;
+  SELECT house_id, assigned_to, xp_reward, last_completed_at INTO v_house_id, v_assigned_to, v_xp, v_completed_at
+  FROM public.chores WHERE id = p_chore_id;
+  IF v_house_id IS NULL THEN RAISE EXCEPTION 'Chore not found'; END IF;
+  IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Chore not in your house'; END IF;
+  IF v_completed_at IS NOT NULL THEN RAISE EXCEPTION 'Chore is already completed'; END IF;
+  IF v_assigned_to IS DISTINCT FROM v_user_id THEN RAISE EXCEPTION 'You can only submit chores assigned to you'; END IF;
+  IF EXISTS (SELECT 1 FROM public.chore_completions WHERE chore_id = p_chore_id AND status = 'pending') THEN
+    RAISE EXCEPTION 'Completion already pending';
+  END IF;
+  INSERT INTO public.chore_completions (chore_id, house_id, submitted_by, xp_reward, status)
+  VALUES (p_chore_id, v_house_id, v_user_id, v_xp, 'pending')
+  RETURNING id INTO v_completion_id;
+  RETURN v_completion_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.approve_chore_completion(p_completion_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_chore_id uuid;
+  v_house_id uuid;
+  v_submitted_by uuid;
+  v_xp integer;
+  v_status public.chore_completion_status;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT public.is_house_admin() THEN RAISE EXCEPTION 'Only house admins can approve completions'; END IF;
+  SELECT chore_id, house_id, submitted_by, xp_reward, status
+  INTO v_chore_id, v_house_id, v_submitted_by, v_xp, v_status
+  FROM public.chore_completions WHERE id = p_completion_id;
+  IF v_chore_id IS NULL THEN RAISE EXCEPTION 'Completion not found'; END IF;
+  IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Completion not in your house'; END IF;
+  IF v_status <> 'pending' THEN RAISE EXCEPTION 'Completion is not pending'; END IF;
+  IF EXISTS (SELECT 1 FROM public.chores WHERE id = v_chore_id AND last_completed_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'Chore is already completed';
+  END IF;
+  UPDATE public.chore_completions SET status = 'approved', reviewed_at = now(), reviewed_by = v_user_id
+  WHERE id = p_completion_id;
+  UPDATE public.chores SET last_completed_at = now(), last_completed_by = v_submitted_by WHERE id = v_chore_id;
+  UPDATE public.profiles SET total_xp = total_xp + v_xp WHERE id = v_submitted_by;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.reject_chore_completion(p_completion_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_status public.chore_completion_status;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT public.is_house_admin() THEN RAISE EXCEPTION 'Only house admins can reject completions'; END IF;
+  SELECT house_id, status INTO v_house_id, v_status FROM public.chore_completions WHERE id = p_completion_id;
+  IF v_house_id IS NULL THEN RAISE EXCEPTION 'Completion not found'; END IF;
+  IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Completion not in your house'; END IF;
+  IF v_status <> 'pending' THEN RAISE EXCEPTION 'Completion is not pending'; END IF;
+  UPDATE public.chore_completions SET status = 'rejected', reviewed_at = now(), reviewed_by = v_user_id
+  WHERE id = p_completion_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.reopen_chore(p_chore_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_house_id uuid;
+  v_xp integer;
+  v_completed_by uuid;
+  v_completed_at timestamptz;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  IF NOT public.is_house_admin() THEN RAISE EXCEPTION 'Only house admins can reopen chores'; END IF;
+  SELECT house_id, xp_reward, last_completed_by, last_completed_at INTO v_house_id, v_xp, v_completed_by, v_completed_at
+  FROM public.chores WHERE id = p_chore_id;
+  IF v_house_id IS NULL THEN RAISE EXCEPTION 'Chore not found'; END IF;
+  IF v_house_id <> public.user_house_id() THEN RAISE EXCEPTION 'Chore not in your house'; END IF;
+  IF v_completed_at IS NULL THEN RAISE EXCEPTION 'Chore is not completed'; END IF;
+  IF v_completed_by IS NOT NULL THEN
+    UPDATE public.profiles SET total_xp = greatest(0, total_xp - v_xp) WHERE id = v_completed_by;
+  END IF;
+  DELETE FROM public.chore_completions WHERE chore_id = p_chore_id AND status = 'pending';
+  UPDATE public.chores SET last_completed_at = null, last_completed_by = null WHERE id = p_chore_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.claim_chore(uuid) FROM public;
+REVOKE ALL ON FUNCTION public.submit_chore_completion(uuid) FROM public;
+REVOKE ALL ON FUNCTION public.approve_chore_completion(uuid) FROM public;
+REVOKE ALL ON FUNCTION public.reject_chore_completion(uuid) FROM public;
+REVOKE ALL ON FUNCTION public.reopen_chore(uuid) FROM public;
+GRANT EXECUTE ON FUNCTION public.claim_chore(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_chore_completion(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_chore_completion(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reject_chore_completion(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reopen_chore(uuid) TO authenticated;
 
 -- Done
 SELECT 'HouseMate Harmony migrations applied successfully' AS status;
