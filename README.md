@@ -155,6 +155,7 @@ After the first deploy, add your Vercel URL to **Supabase → Authentication →
 
 - **Site URL:** `https://housemate-harmony.vercel.app`
 - **Redirect URLs:** `https://housemate-harmony.vercel.app/**` (and preview URLs if you use branch deploys)
+- **Email confirmation callback:** `https://housemate-harmony.vercel.app/auth/callback` (local dev: `http://localhost:3000/auth/callback`)
 
 ### CLI deploy
 

@@ -5,7 +5,7 @@ import { MaterialIcon } from "@/components/design/material-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { ChoreFrequency, Profile } from "@/lib/database.types";
+import type { Chore, ChoreFrequency, Profile } from "@/lib/database.types";
 
 const FREQ_KEYS: Record<ChoreFrequency, string> = {
   daily: "freqDaily",
@@ -15,25 +15,32 @@ const FREQ_KEYS: Record<ChoreFrequency, string> = {
   once: "freqOnce",
 };
 
-type ChoreAddModalProps = {
+type ChoreFormModalProps = {
   open: boolean;
+  mode: "create" | "edit";
+  chore?: Chore | null;
   onClose: () => void;
   members: Profile[];
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   error: string | null;
 };
 
-export function ChoreAddModal({
+export function ChoreFormModal({
   open,
+  mode,
+  chore,
   onClose,
   members,
   onSubmit,
   error,
-}: ChoreAddModalProps) {
+}: ChoreFormModalProps) {
   const t = useTranslations("chores");
   const tc = useTranslations("common");
 
   if (!open) return null;
+
+  const isEdit = mode === "edit" && chore != null;
+  const showXpHint = isEdit && chore.last_completed_at != null;
 
   return (
     <div
@@ -51,7 +58,7 @@ export function ChoreAddModal({
       <div className="bg-surface-container-lowest relative max-h-[min(90dvh,100%)] w-full max-w-lg overflow-y-auto rounded-t-[2rem] shadow-2xl sm:rounded-[2rem]">
         <div className="bg-primary text-primary-foreground flex items-center justify-between p-8">
           <h2 id="chore-modal-title" className="text-headline-md font-bold">
-            {t("logChoreModal")}
+            {isEdit ? t("editChoreModal") : t("logChoreModal")}
           </h2>
           <button
             type="button"
@@ -62,13 +69,19 @@ export function ChoreAddModal({
             <MaterialIcon name="close" />
           </button>
         </div>
-        <form onSubmit={onSubmit} className="space-y-4 p-8">
+        <form
+          key={isEdit ? chore.id : "create"}
+          onSubmit={onSubmit}
+          className="space-y-4 p-8"
+        >
+          {isEdit && <input type="hidden" name="chore_id" value={chore.id} />}
           <div className="space-y-2">
             <Label htmlFor="title">{tc("title")}</Label>
             <Input
               id="title"
               name="title"
               required
+              defaultValue={chore?.title ?? ""}
               className="h-14 rounded-xl"
             />
           </div>
@@ -77,6 +90,7 @@ export function ChoreAddModal({
             <Input
               id="description"
               name="description"
+              defaultValue={chore?.description ?? ""}
               className="h-14 rounded-xl"
             />
           </div>
@@ -87,7 +101,7 @@ export function ChoreAddModal({
                 id="frequency"
                 name="frequency"
                 className="border-input h-14 w-full rounded-xl border bg-transparent px-3 text-sm"
-                defaultValue="weekly"
+                defaultValue={chore?.frequency ?? "weekly"}
               >
                 {(
                   [
@@ -111,9 +125,14 @@ export function ChoreAddModal({
                 name="xp_reward"
                 type="number"
                 min={0}
-                defaultValue={10}
+                defaultValue={chore?.xp_reward ?? 10}
                 className="h-14 rounded-xl"
               />
+              {showXpHint && (
+                <p className="text-on-surface-variant text-label-sm">
+                  {t("xpEditCompletedHint")}
+                </p>
+              )}
             </div>
           </div>
           <div className="space-y-2">
@@ -122,6 +141,7 @@ export function ChoreAddModal({
               id="assigned_to"
               name="assigned_to"
               className="border-input h-14 w-full rounded-xl border bg-transparent px-3 text-sm"
+              defaultValue={chore?.assigned_to ?? ""}
             >
               <option value="">{t("unassigned")}</option>
               {members.map((m) => (
@@ -140,10 +160,13 @@ export function ChoreAddModal({
             type="submit"
             className="btn-press bg-primary h-14 w-full rounded-2xl font-bold"
           >
-            {t("createChore")}
+            {isEdit ? t("saveChore") : t("createChore")}
           </Button>
         </form>
       </div>
     </div>
   );
 }
+
+/** @deprecated Use ChoreFormModal */
+export const ChoreAddModal = ChoreFormModal;

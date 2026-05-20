@@ -23,6 +23,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,34 +31,78 @@ export default function SignupPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
+    const redirectTo = `${window.location.origin}/auth/callback?next=/onboarding`;
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { username: username.trim() },
+        emailRedirectTo: redirectTo,
       },
     });
 
-    setLoading(false);
-
     if (signUpError) {
+      setLoading(false);
       setError(signUpError.message);
       return;
     }
 
-    router.refresh();
-    router.push("/onboarding");
+    if (data.session) {
+      router.refresh();
+      router.push("/onboarding");
+      return;
+    }
+
+    setLoading(false);
+    setPendingEmail(email);
+  }
+
+  if (pendingEmail) {
+    return (
+      <main className="bg-background flex min-h-full flex-col items-center justify-center px-margin-mobile py-12">
+        <Card className="glass-card shadow-card w-full max-w-md rounded-3xl border-outline-variant/30">
+          <CardHeader className="text-center">
+            <CardTitle className="text-headline-lg text-primary">
+              {t("checkEmailTitle")}
+            </CardTitle>
+            <CardDescription
+              className="text-body-md text-on-surface-variant"
+              role="status"
+              aria-live="polite"
+            >
+              {t("checkEmailDescription", { email: pendingEmail })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 text-center">
+            <Link
+              href="/login"
+              className="btn-press bg-primary text-primary-foreground inline-flex h-14 w-full items-center justify-center rounded-2xl text-base font-bold"
+            >
+              {t("backToSignIn")}
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   return (
-    <main className="flex min-h-full flex-col items-center justify-center px-4 py-12">
-      <Card className="shadow-card w-full max-w-md border-border/60">
+    <main className="bg-background flex min-h-full flex-col items-center justify-center px-margin-mobile py-12">
+      <Card className="glass-card shadow-card w-full max-w-md rounded-3xl border-outline-variant/30">
         <CardHeader className="text-center">
-          <CardTitle className="font-heading text-2xl">{t("joinTitle")}</CardTitle>
-          <CardDescription>{t("signUpDescription")}</CardDescription>
+          <CardTitle className="text-headline-lg text-primary">
+            {t("joinTitle")}
+          </CardTitle>
+          <CardDescription className="text-body-md text-on-surface-variant">
+            {t("signUpDescription")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            aria-busy={loading}
+          >
             <div className="space-y-2">
               <Label htmlFor="username">{t("username")}</Label>
               <Input
@@ -66,6 +111,7 @@ export default function SignupPage() {
                 autoComplete="username"
                 required
                 minLength={2}
+                disabled={loading}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-14 rounded-xl"
@@ -78,6 +124,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
+                disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-14 rounded-xl"
@@ -91,6 +138,7 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 minLength={6}
+                disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-14 rounded-xl"
@@ -104,7 +152,7 @@ export default function SignupPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="btn-press h-14 w-full rounded-xl text-base font-bold"
+              className="btn-press bg-primary h-14 w-full rounded-2xl text-base font-bold"
             >
               {loading ? t("creatingAccount") : t("createAccount")}
             </Button>

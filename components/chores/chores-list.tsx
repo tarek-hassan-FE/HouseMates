@@ -3,13 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { ChoreHubHero } from "@/components/chores/chore-hub-hero";
 import { RewardsShopCta } from "@/components/chores/rewards-shop-cta";
-import { ChoreAddModal } from "@/components/chores/chore-add-modal";
+import { ChoreFormModal } from "@/components/chores/chore-add-modal";
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries/keys";
 import { choreIconName } from "@/lib/chore-icons";
@@ -17,6 +17,8 @@ import type { Chore, Profile } from "@/lib/database.types";
 import {
   createChoreAction,
   deleteChoreAction,
+  reopenChoreAction,
+  updateChoreAction,
 } from "@/app/[locale]/(app)/chores/actions";
 import { cn } from "@/lib/utils";
 
@@ -46,21 +48,97 @@ const FREQ_KEYS: Record<string, string> = {
   once: "freqOnce",
 };
 
+function ChoreMetaChips({
+  chore,
+  memberMap,
+  t,
+}: {
+  chore: Chore;
+  memberMap: Record<string, string>;
+  t: ReturnType<typeof useTranslations<"chores">>;
+}) {
+  const freqLabel = FREQ_KEYS[chore.frequency]
+    ? t(FREQ_KEYS[chore.frequency])
+    : chore.frequency;
+
+  return (
+    <div className="mt-1 flex flex-wrap gap-2">
+      {chore.assigned_to && memberMap[chore.assigned_to] && (
+        <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
+          <MaterialIcon name="person" size={14} />
+          {memberMap[chore.assigned_to]}
+        </span>
+      )}
+      <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
+        <MaterialIcon name="calendar_today" size={14} />
+        {freqLabel}
+      </span>
+    </div>
+  );
+}
+
+function AdminChoreActions({
+  onEdit,
+  onDelete,
+  onReopen,
+  showReopen,
+  t,
+  tc,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  onReopen?: () => void;
+  showReopen?: boolean;
+  t: ReturnType<typeof useTranslations<"chores">>;
+  tc: ReturnType<typeof useTranslations<"common">>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="text-primary text-label-sm hover:underline"
+      >
+        {tc("edit")}
+      </button>
+      {showReopen && onReopen && (
+        <button
+          type="button"
+          onClick={onReopen}
+          className="text-secondary text-label-sm hover:underline"
+        >
+          {t("reopenChore")}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onDelete}
+        className="text-error text-label-sm hover:underline"
+      >
+        {tc("delete")}
+      </button>
+    </div>
+  );
+}
+
 export function ChoresList({ members }: { members: Profile[] }) {
   const { house, profile, isAdmin } = useHouse();
   const memberMap = Object.fromEntries(members.map((m) => [m.id, m.username]));
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const format = useFormatter();
   const t = useTranslations("chores");
   const tc = useTranslations("common");
-  const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
+  const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get("add") === "1" && isAdmin) {
-      setShowForm(true);
+      setFormMode("create");
+      setEditingChore(null);
     }
   }, [searchParams, isAdmin]);
 
@@ -70,6 +148,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
   });
 
   const activeChores = chores.filter((c) => !c.last_completed_at);
+  const completedChores = chores.filter((c) => c.last_completed_at);
   const rank = computeRank(members, profile.id);
 
   const completeMutation = useMutation({
@@ -91,7 +170,11 @@ export function ChoresList({ members }: { members: Profile[] }) {
       queryClient.setQueryData<Chore[]>(queryKeys.chores(house.id), (old) =>
         (old ?? []).map((c) =>
           c.id === choreId
-            ? { ...c, last_completed_at: new Date().toISOString() }
+            ? {
+                ...c,
+                last_completed_at: new Date().toISOString(),
+                last_completed_by: profile.id,
+              }
             : c,
         ),
       );
@@ -119,6 +202,19 @@ export function ChoresList({ members }: { members: Profile[] }) {
     return chore.assigned_to === profile.id;
   };
 
+  function openEditForm(chore: Chore) {
+    setFormMode("edit");
+    setEditingChore(chore);
+    setFormError(null);
+  }
+
+  function closeForm() {
+    setFormMode(null);
+    setEditingChore(null);
+    setFormError(null);
+    router.replace("/chores");
+  }
+
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
@@ -127,8 +223,24 @@ export function ChoresList({ members }: { members: Profile[] }) {
       setFormError(result.error);
       return;
     }
-    setShowForm(false);
-    router.replace("/chores");
+    closeForm();
+    queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
+    router.refresh();
+  }
+
+  async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingChore) return;
+    setFormError(null);
+    const result = await updateChoreAction(
+      editingChore.id,
+      new FormData(e.currentTarget),
+    );
+    if (!result.success) {
+      setFormError(result.error);
+      return;
+    }
+    closeForm();
     queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
     router.refresh();
   }
@@ -137,8 +249,28 @@ export function ChoresList({ members }: { members: Profile[] }) {
     if (!confirm(t("deleteChoreConfirm"))) return;
     const result = await deleteChoreAction(choreId);
     if (!result.success) setFormError(result.error);
-    else
+    else {
       queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
+      router.refresh();
+    }
+  }
+
+  async function handleReopen(choreId: string) {
+    if (!confirm(t("reopenChoreConfirm"))) return;
+    const result = await reopenChoreAction(choreId);
+    if (!result.success) setFormError(result.error);
+    else {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chores(house.id) });
+      router.refresh();
+    }
+  }
+
+  function formatCompletedDate(iso: string) {
+    return format.dateTime(new Date(iso), {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }
 
   if (isLoading) {
@@ -163,7 +295,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
             </span>
           </div>
 
-          {formError && !showForm && (
+          {formError && formMode === null && (
             <p className="text-destructive text-sm px-2" role="alert">
               {formError}
             </p>
@@ -178,9 +310,6 @@ export function ChoresList({ members }: { members: Profile[] }) {
             {activeChores.map((chore) => {
               const icon = choreIconName(chore.title);
               const isCelebrating = celebratingId === chore.id;
-              const freqLabel = FREQ_KEYS[chore.frequency]
-                ? t(FREQ_KEYS[chore.frequency])
-                : chore.frequency;
 
               return (
                 <li
@@ -208,18 +337,7 @@ export function ChoresList({ members }: { members: Profile[] }) {
                       <h4 className="text-body-lg text-on-surface font-bold">
                         {chore.title}
                       </h4>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {chore.assigned_to && memberMap[chore.assigned_to] && (
-                          <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
-                            <MaterialIcon name="person" size={14} />
-                            {memberMap[chore.assigned_to]}
-                          </span>
-                        )}
-                        <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
-                          <MaterialIcon name="calendar_today" size={14} />
-                          {freqLabel}
-                        </span>
-                      </div>
+                      <ChoreMetaChips chore={chore} memberMap={memberMap} t={t} />
                     </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
@@ -241,13 +359,12 @@ export function ChoresList({ members }: { members: Profile[] }) {
                       {t("done")}
                     </button>
                     {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(chore.id)}
-                        className="text-error text-label-sm hover:underline"
-                      >
-                        {tc("delete")}
-                      </button>
+                      <AdminChoreActions
+                        onEdit={() => openEditForm(chore)}
+                        onDelete={() => handleDelete(chore.id)}
+                        t={t}
+                        tc={tc}
+                      />
                     )}
                   </div>
                 </li>
@@ -255,24 +372,61 @@ export function ChoresList({ members }: { members: Profile[] }) {
             })}
           </ul>
 
-          {chores.some((c) => c.last_completed_at) && (
-            <details className="px-2">
+          {completedChores.length > 0 && (
+            <details className="px-2" open>
               <summary className="text-label-md text-on-surface-variant cursor-pointer">
-                {t("completedChores", {
-                  count: chores.filter((c) => c.last_completed_at).length,
-                })}
+                {t("completedChores", { count: completedChores.length })}
               </summary>
-              <ul className="mt-3 space-y-2 opacity-70">
-                {chores
-                  .filter((c) => c.last_completed_at)
-                  .map((chore) => (
+              <ul className="mt-3 space-y-3">
+                {completedChores.map((chore) => {
+                  const icon = choreIconName(chore.title);
+                  const completedDate = chore.last_completed_at
+                    ? formatCompletedDate(chore.last_completed_at)
+                    : null;
+
+                  return (
                     <li
                       key={chore.id}
-                      className="text-body-md text-on-surface-variant line-through"
+                      className="bg-surface-container-low border-outline-variant flex flex-col gap-3 rounded-2xl border p-4 opacity-90 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      {chore.title}
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="bg-surface-container-high text-on-surface-variant flex size-12 shrink-0 items-center justify-center rounded-xl">
+                          <MaterialIcon name={icon} size={24} />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-body-md text-on-surface line-through font-semibold">
+                            {chore.title}
+                          </h4>
+                          <ChoreMetaChips
+                            chore={chore}
+                            memberMap={memberMap}
+                            t={t}
+                          />
+                          {completedDate && (
+                            <p className="text-on-surface-variant text-label-sm mt-1">
+                              {t("completedOn", { date: completedDate })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                        <span className="text-label-md text-on-surface-variant text-center sm:text-end">
+                          +{chore.xp_reward} XP
+                        </span>
+                        {isAdmin && (
+                          <AdminChoreActions
+                            onEdit={() => openEditForm(chore)}
+                            onDelete={() => handleDelete(chore.id)}
+                            onReopen={() => handleReopen(chore.id)}
+                            showReopen
+                            t={t}
+                            tc={tc}
+                          />
+                        )}
+                      </div>
                     </li>
-                  ))}
+                  );
+                })}
               </ul>
             </details>
           )}
@@ -284,14 +438,13 @@ export function ChoresList({ members }: { members: Profile[] }) {
       </div>
 
       {isAdmin && (
-        <ChoreAddModal
-          open={showForm}
-          onClose={() => {
-            setShowForm(false);
-            router.replace("/chores");
-          }}
+        <ChoreFormModal
+          open={formMode !== null}
+          mode={formMode === "edit" ? "edit" : "create"}
+          chore={editingChore}
+          onClose={closeForm}
           members={members}
-          onSubmit={handleCreate}
+          onSubmit={formMode === "edit" ? handleUpdate : handleCreate}
           error={formError}
         />
       )}

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,13 +16,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
+function mapAuthError(message: string, t: (key: string) => string): string {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("email not confirmed") ||
+    lower.includes("email_not_confirmed")
+  ) {
+    return t("emailNotConfirmed");
+  }
+  return message;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const confirmed = searchParams.get("confirmed") === "1";
+  const callbackError = searchParams.get("error") === "auth_callback";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +50,9 @@ export default function LoginPage() {
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
-      setError(signInError.message);
+      setLoading(false);
+      setError(mapAuthError(signInError.message, t));
       return;
     }
 
@@ -57,7 +72,25 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {confirmed && (
+            <p
+              className="bg-tertiary/10 text-tertiary mb-4 rounded-xl px-4 py-3 text-sm"
+              role="status"
+              aria-live="polite"
+            >
+              {t("confirmedSuccess")}
+            </p>
+          )}
+          {callbackError && (
+            <p className="text-destructive mb-4 text-sm" role="alert">
+              {t("authCallbackError")}
+            </p>
+          )}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            aria-busy={loading}
+          >
             <div className="space-y-2">
               <Label htmlFor="email">{t("email")}</Label>
               <Input
@@ -65,6 +98,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-14 rounded-xl"
@@ -77,6 +111,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
+                disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-14 rounded-xl"

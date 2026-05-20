@@ -37,6 +37,7 @@ export interface Chore {
   frequency: ChoreFrequency;
   assigned_to: string | null;
   last_completed_at: string | null;
+  last_completed_by: string | null;
   created_at: string;
   assignee?: { username: string } | null;
 }
