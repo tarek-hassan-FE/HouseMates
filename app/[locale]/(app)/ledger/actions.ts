@@ -7,9 +7,10 @@ import { parseAmountToCents } from "@/lib/money";
 import type { ExpenseStrategy } from "@/lib/database.types";
 import { parseShareFieldsFromFormData, validateExactShares } from "@/lib/split-exact";
 import type { ExactSplitValidationError } from "@/lib/split-exact-validate";
+import { isValidHouseMediaUrl } from "@/lib/house-storage";
 
 export type ActionResult =
-  | { success: true }
+  | { success: true; expenseId?: string }
   | { success: false; error: string };
 
 async function requireHouseUser() {
@@ -62,8 +63,10 @@ export async function createExpenseAction(
     return { success: false, error: t("invalidAmount") };
   }
 
+  let expenseId: string | undefined;
+
   if (strategy === "equal") {
-    const { error } = await session.supabase.rpc(
+    const { data, error } = await session.supabase.rpc(
       "create_expense_with_equal_split",
       {
         p_title: title,
@@ -71,6 +74,7 @@ export async function createExpenseAction(
       },
     );
     if (error) return { success: false, error: error.message };
+    expenseId = data as string;
   } else if (strategy === "exact") {
     const { data: members } = await session.supabase
       .from("profiles")
@@ -93,7 +97,7 @@ export async function createExpenseAction(
       };
     }
 
-    const { error } = await session.supabase.rpc(
+    const { data, error } = await session.supabase.rpc(
       "create_expense_with_exact_split",
       {
         p_title: title,
@@ -102,9 +106,33 @@ export async function createExpenseAction(
       },
     );
     if (error) return { success: false, error: error.message };
+    expenseId = data as string;
   } else {
     return { success: false, error: t("invalidAmount") };
   }
+
+  revalidatePath("/ledger");
+  revalidatePath("/dashboard");
+  return { success: true, expenseId };
+}
+
+export async function attachExpenseReceiptAction(
+  expenseId: string,
+  url: string,
+): Promise<ActionResult> {
+  const t = await getTranslations("errors");
+  const session = await requireHouseUser();
+  if (session.error) return { success: false, error: session.error };
+
+  if (!isValidHouseMediaUrl(url, expenseId)) {
+    return { success: false, error: t("invalidAttachment") };
+  }
+
+  const { error } = await session.supabase.rpc("attach_expense_receipt", {
+    p_expense_id: expenseId,
+    p_url: url,
+  });
+  if (error) return { success: false, error: error.message };
 
   revalidatePath("/ledger");
   revalidatePath("/dashboard");

@@ -55,6 +55,7 @@ export interface ChorePendingCompletion {
   submitted_by: string;
   submitted_at: string;
   status: "pending";
+  proof_image_url?: string | null;
 }
 
 export interface Chore {
@@ -67,6 +68,7 @@ export interface Chore {
   assigned_to: string | null;
   last_completed_at: string | null;
   last_completed_by: string | null;
+  last_proof_image_url?: string | null;
   created_at: string;
   assignee?: { username: string } | null;
   pending_completion?: ChorePendingCompletion | null;
@@ -79,6 +81,7 @@ export interface Expense {
   title: string;
   amount_cents: number;
   strategy: ExpenseStrategy;
+  receipt_url?: string | null;
   created_at: string;
   payer?: { username: string } | null;
 }

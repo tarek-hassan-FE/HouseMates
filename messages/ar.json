@@ -30,6 +30,16 @@
     "english": "English",
     "arabic": "العربية"
   },
+  "attachments": {
+    "addPhotoOptional": "إضافة صورة (اختياري)",
+    "removePhoto": "إزالة الصورة",
+    "invalidImage": "يرجى اختيار ملف صورة",
+    "uploadFailed": "تعذر رفع الصورة",
+    "viewPhoto": "عرض الصورة",
+    "receipt": "إيصال",
+    "markDone": "تم الإنجاز",
+    "confirmDone": "تأكيد"
+  },
   "nav": {
     "dashboard": "الرئيسية",
     "chores": "المهام",
@@ -134,9 +144,12 @@
     "fabChore": "مهمة",
     "fabPurchasedItem": "مشتريات",
     "fabBill": "فاتورة",
+    "giveFeedback": "أرسل لنا ملاحظاتك",
+    "giveFeedbackDesc": "راسلنا على إنستغرام @roomies.egypt",
     "buyCoffee": "ادعمنا بقهوة",
     "buyCoffeeDesc": "ادعم Roomies بإكرامية عبر InstaPay.",
     "buyCoffeeQrTitle": "ادعمنا بقهوة",
+    "buyCoffeeQrPitch": "Roomies مجاني — بدون إعلانات وبدون اشتراكات. بنيناه لبيوت مشتركة حقيقية، وكل إكرامية تساعدنا نصلّح الأخطاء، نضيف مزايا، ونستمر في التشغيل. لو وفّر عليك جدال الفواتير أو المهام، فالقهوة أجمل شكر منّا.",
     "buyCoffeeQrSubtitle": "امسح الرمز لإرسال إكرامية عبر InstaPay.",
     "buyCoffeeQrHint": "امسحه بكاميرا هاتفك أو تطبيق البنك."
   },
@@ -440,6 +453,7 @@
     "splitSharesRequired": "أدخل حصة لكل شريك سكن",
     "splitInvalidShare": "أدخل مبلغاً صالحاً لكل حصة",
     "splitMustEqualTotal": "يجب أن تساوي الحصص المبلغ الإجمالي",
-    "adminOnly": "المديرون فقط يمكنهم القيام بذلك"
+    "adminOnly": "المديرون فقط يمكنهم القيام بذلك",
+    "invalidAttachment": "رابط المرفق غير صالح"
   }
 }

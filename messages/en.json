@@ -30,6 +30,16 @@
     "english": "English",
     "arabic": "العربية"
   },
+  "attachments": {
+    "addPhotoOptional": "Add a photo (optional)",
+    "removePhoto": "Remove photo",
+    "invalidImage": "Please choose an image file",
+    "uploadFailed": "Photo could not be uploaded",
+    "viewPhoto": "View photo",
+    "receipt": "Receipt",
+    "markDone": "Mark as done",
+    "confirmDone": "Confirm"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "chores": "Chores",
@@ -134,9 +144,12 @@
     "fabChore": "Chore",
     "fabPurchasedItem": "Purchased Item",
     "fabBill": "Bill",
+    "giveFeedback": "Give us feedback",
+    "giveFeedbackDesc": "Message us on Instagram @roomies.egypt",
     "buyCoffee": "Buy us coffee",
     "buyCoffeeDesc": "Support Roomies with a tip via InstaPay.",
     "buyCoffeeQrTitle": "Buy us coffee",
+    "buyCoffeeQrPitch": "Roomies is free — no ads, no paywalls. We built it for real shared homes, and every tip helps us ship fixes, new features, and keep the lights on. If Roomies saved you a fight over bills or chores, a coffee is a huge thank-you.",
     "buyCoffeeQrSubtitle": "Scan to send a tip via InstaPay.",
     "buyCoffeeQrHint": "Scan with your phone camera or banking app."
   },
@@ -440,6 +453,7 @@
     "splitSharesRequired": "Enter a share for each roommate",
     "splitInvalidShare": "Enter a valid amount for each share",
     "splitMustEqualTotal": "Shares must add up to the total amount",
-    "adminOnly": "Only house admins can do this"
+    "adminOnly": "Only house admins can do this",
+    "invalidAttachment": "Invalid attachment URL"
   }
 }

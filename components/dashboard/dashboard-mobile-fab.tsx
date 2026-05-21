@@ -9,7 +9,9 @@ import { ShoppingAddModal } from "@/components/shopping/shopping-add-modal";
 import { ExpenseAddModal } from "@/components/ledger/expense-add-modal";
 import { createChoreAction } from "@/app/[locale]/(app)/chores/actions";
 import { createShoppingItemAction } from "@/app/[locale]/(app)/shopping/actions";
+import { useHouse } from "@/components/providers/house-context";
 import { createExpenseAction } from "@/app/[locale]/(app)/ledger/actions";
+import { attachExpenseReceiptFromFile } from "@/lib/attach-expense-receipt";
 import { cn } from "@/lib/utils";
 import type { Profile, ShoppingListItem } from "@/lib/database.types";
 
@@ -35,7 +37,9 @@ export function DashboardMobileFab({
   onOpenShopping,
 }: DashboardMobileFabProps) {
   const router = useRouter();
+  const { house } = useHouse();
   const t = useTranslations("dashboard");
+  const ta = useTranslations("attachments");
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
@@ -89,16 +93,30 @@ export function DashboardMobileFab({
     router.refresh();
   }
 
-  async function handleCreateExpense(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateExpense(
+    e: React.FormEvent<HTMLFormElement>,
+    imageFile: File | null,
+  ) {
     e.preventDefault();
     setExpenseLoading(true);
     setExpenseError(null);
     const result = await createExpenseAction(new FormData(e.currentTarget));
-    setExpenseLoading(false);
     if (!result.success) {
+      setExpenseLoading(false);
       setExpenseError(result.error);
       return;
     }
+    if (imageFile && result.expenseId) {
+      const attach = await attachExpenseReceiptFromFile(
+        house.id,
+        result.expenseId,
+        imageFile,
+      );
+      if (!attach.ok) {
+        setExpenseError(attach.error ?? ta("uploadFailed"));
+      }
+    }
+    setExpenseLoading(false);
     (e.target as HTMLFormElement).reset();
     closeModal();
     router.refresh();

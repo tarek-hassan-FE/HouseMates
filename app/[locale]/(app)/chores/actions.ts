@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import type { ChoreFrequency } from "@/lib/database.types";
+import { isValidHouseMediaUrl } from "@/lib/house-storage";
 
 export type ActionResult =
   | { success: true }
@@ -140,6 +142,58 @@ export async function approveChoreCompletionAction(
     p_completion_id: completionId,
   });
 
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/chores");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function attachChoreCompletionProofAction(
+  completionId: string,
+  url: string,
+): Promise<ActionResult> {
+  const t = await getTranslations("errors");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  if (!isValidHouseMediaUrl(url, completionId)) {
+    return { success: false, error: t("invalidAttachment") };
+  }
+
+  const { error } = await supabase.rpc("attach_chore_completion_proof", {
+    p_completion_id: completionId,
+    p_url: url,
+  });
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/chores");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function attachChoreInstantProofAction(
+  choreId: string,
+  url: string,
+): Promise<ActionResult> {
+  const t = await getTranslations("errors");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  if (!isValidHouseMediaUrl(url, choreId)) {
+    return { success: false, error: t("invalidAttachment") };
+  }
+
+  const { error } = await supabase.rpc("attach_chore_instant_proof", {
+    p_chore_id: choreId,
+    p_url: url,
+  });
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/chores");

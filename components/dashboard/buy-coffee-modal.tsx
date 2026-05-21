@@ -66,7 +66,12 @@ export function BuyCoffeeModal({ open, onClose }: BuyCoffeeModalProps) {
             <MaterialIcon name="close" />
           </button>
         </div>
-        <p className="text-body-md text-on-surface-variant mt-2">
+        <div className="bg-primary-container/40 border-primary/15 mt-4 rounded-2xl border px-4 py-3">
+          <p className="text-body-md text-on-surface leading-relaxed">
+            {t("buyCoffeeQrPitch")}
+          </p>
+        </div>
+        <p className="text-body-md text-on-surface-variant mt-4">
           {t("buyCoffeeQrSubtitle")}
         </p>
         <div className="mt-6 flex justify-center">

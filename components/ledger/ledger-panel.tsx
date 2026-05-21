@@ -32,6 +32,8 @@ import { splitEqualAmongMembers } from "@/lib/split-equal";
 import { formatExactSplitBreakdown } from "@/lib/split-exact";
 import type { Expense } from "@/lib/database.types";
 import { sendPaymentRemindersAction } from "@/app/[locale]/(app)/notifications/actions";
+import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog";
+import { attachExpenseReceiptFromFile } from "@/lib/attach-expense-receipt";
 import {
   createExpenseAction,
   deleteExpenseAction,
@@ -69,8 +71,9 @@ export function LedgerPanel({
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
   const confirm = useConfirm();
-  const { isAdmin } = useHouse();
+  const { isAdmin, house } = useHouse();
   const router = useRouter();
+  const ta = useTranslations("attachments");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,6 +81,10 @@ export function LedgerPanel({
   const [reminding, setReminding] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [viewerImage, setViewerImage] = useState<{
+    url: string;
+    title: string;
+  } | null>(null);
 
   const isSoloHouse = memberCount <= 1;
   const memberById = Object.fromEntries(members.map((m) => [m.id, m]));
@@ -122,16 +129,30 @@ export function LedgerPanel({
   const remindDisabled = allDebtorsOnCooldown(debtorIds, initialCooldowns);
   const remindCooldownHint = remindDisabled ? t("remindAllOnCooldown") : null;
 
-  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(
+    e: React.FormEvent<HTMLFormElement>,
+    imageFile: File | null,
+  ) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     const result = await createExpenseAction(new FormData(e.currentTarget));
-    setLoading(false);
     if (!result.success) {
+      setLoading(false);
       setError(result.error);
       return;
     }
+    if (imageFile && result.expenseId) {
+      const attach = await attachExpenseReceiptFromFile(
+        house.id,
+        result.expenseId,
+        imageFile,
+      );
+      if (!attach.ok) {
+        setError(attach.error);
+      }
+    }
+    setLoading(false);
     (e.target as HTMLFormElement).reset();
     setModalOpen(false);
     router.refresh();
@@ -412,6 +433,21 @@ export function LedgerPanel({
                       {t("markSettled")}
                     </button>
                   )}
+                  {expense.receipt_url && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setViewerImage({
+                          url: expense.receipt_url!,
+                          title: expense.title,
+                        })
+                      }
+                      className="btn-press text-primary flex size-10 items-center justify-center rounded-full bg-surface-container-high"
+                      aria-label={ta("viewPhoto")}
+                    >
+                      <MaterialIcon name="photo" size={20} />
+                    </button>
+                  )}
                   {isAdmin && (
                     <button
                       type="button"
@@ -448,6 +484,13 @@ export function LedgerPanel({
         isSoloHouse={isSoloHouse}
         members={members}
         payerId={userId}
+      />
+
+      <ImageViewerDialog
+        open={viewerImage !== null}
+        imageUrl={viewerImage?.url ?? null}
+        title={viewerImage?.title}
+        onClose={() => setViewerImage(null)}
       />
     </div>
   );

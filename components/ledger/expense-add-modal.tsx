@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { centsToDisplay, parseAmountToCents } from "@/lib/money";
+import { OptionalImagePicker } from "@/components/shared/optional-image-picker";
 import {
   equalShareStringsFromCents,
   equalSharesAmongMembers,
@@ -23,7 +24,10 @@ type SplitMode = "equal" | "exact";
 type ExpenseAddModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (
+    e: React.FormEvent<HTMLFormElement>,
+    imageFile: File | null,
+  ) => void;
   loading: boolean;
   error: string | null;
   isSoloHouse: boolean;
@@ -50,6 +54,7 @@ export function ExpenseAddModal({
   const [amount, setAmount] = useState("");
   const [shares, setShares] = useState<Record<string, string>>({});
   const [clientError, setClientError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const memberIds = useMemo(
     () => [...members].sort((a, b) => a.id.localeCompare(b.id)).map((m) => m.id),
@@ -81,6 +86,7 @@ export function ExpenseAddModal({
       setAmount("");
       setShares({});
       setClientError(null);
+      setImageFile(null);
     }
   }, [open]);
 
@@ -119,7 +125,7 @@ export function ExpenseAddModal({
         return;
       }
     }
-    onSubmit(e);
+    onSubmit(e, imageFile);
   }
 
   const displayError = clientError ?? error;
@@ -287,6 +293,9 @@ export function ExpenseAddModal({
               {t("soloHouseAddHint")}
             </p>
           )}
+
+          <OptionalImagePicker file={imageFile} onFileChange={setImageFile} />
+
           {displayError && (
             <p className="text-destructive text-sm" role="alert">
               {displayError}

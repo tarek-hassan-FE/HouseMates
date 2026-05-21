@@ -1,7 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { requireHouseSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { BuyCoffeeCard } from "@/components/dashboard/buy-coffee-card";
+import { SupportSectionCard } from "@/components/dashboard/buy-coffee-card";
 import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 import { LeaderboardPodium } from "@/components/dashboard/leaderboard-podium";
 import { FinanceStatusCard } from "@/components/dashboard/finance-status-card";
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
       shoppingListItems={dashboardProps.shoppingListItems}
     >
       <InstallAppPrompt />
-      <BuyCoffeeCard />
+      <SupportSectionCard />
       <LeaderboardPodium
         entries={entries}
         leaderName={leader?.username}

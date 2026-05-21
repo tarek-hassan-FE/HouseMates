@@ -11,6 +11,12 @@ import { MaterialIcon } from "@/components/design/material-icon";
 import { ChoreHubHero } from "@/components/chores/chore-hub-hero";
 import { RewardsShopCta } from "@/components/chores/rewards-shop-cta";
 import { ChoreFormModal } from "@/components/chores/chore-add-modal";
+import { ChoreCompleteModal } from "@/components/chores/chore-complete-modal";
+import { ImageViewerDialog } from "@/components/shared/image-viewer-dialog";
+import {
+  attachChoreCompletionProofFromFile,
+  attachChoreInstantProofFromFile,
+} from "@/lib/attach-chore-proof";
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries/keys";
 import { choreIconName } from "@/lib/chore-icons";
@@ -35,7 +41,7 @@ async function fetchChores(houseId: string): Promise<Chore[]> {
       .order("created_at", { ascending: false }),
     supabase
       .from("chore_completions")
-      .select("id, chore_id, submitted_by, submitted_at, status")
+      .select("id, chore_id, submitted_by, submitted_at, status, proof_image_url")
       .eq("house_id", houseId)
       .eq("status", "pending"),
   ]);
@@ -51,6 +57,7 @@ async function fetchChores(houseId: string): Promise<Chore[]> {
         submitted_by: c.submitted_by,
         submitted_at: c.submitted_at,
         status: "pending" as const,
+        proof_image_url: c.proof_image_url,
       } satisfies ChorePendingCompletion,
     ]),
   );
@@ -162,12 +169,23 @@ export function ChoresList({ members }: { members: Profile[] }) {
   const searchParams = useSearchParams();
   const format = useFormatter();
   const t = useTranslations("chores");
+  const ta = useTranslations("attachments");
   const tc = useTranslations("common");
   const confirm = useConfirm();
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [editingChore, setEditingChore] = useState<Chore | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<{
+    chore: Chore;
+    mode: "submit" | "admin_complete";
+  } | null>(null);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<{
+    url: string;
+    title: string;
+  } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [celebrationMode, setCelebrationMode] = useState<"completed" | "submitted">(
     "completed",
   );
@@ -231,14 +249,33 @@ export function ChoresList({ members }: { members: Profile[] }) {
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (choreId: string) => {
+    mutationFn: async ({
+      choreId,
+      imageFile,
+    }: {
+      choreId: string;
+      imageFile: File | null;
+    }) => {
       const supabase = createClient();
-      const { error } = await supabase.rpc("submit_chore_completion", {
-        p_chore_id: choreId,
-      });
+      const { data: completionId, error } = await supabase.rpc(
+        "submit_chore_completion",
+        { p_chore_id: choreId },
+      );
       if (error) throw error;
+      let uploadError: string | null = null;
+      if (imageFile && completionId) {
+        const attach = await attachChoreCompletionProofFromFile(
+          house.id,
+          completionId as string,
+          imageFile,
+        );
+        if (!attach.ok) uploadError = attach.error;
+      }
+      return { uploadError };
     },
-    onMutate: async (choreId) => {
+    onMutate: async ({ choreId }) => {
+      setCompleteTarget(null);
+      setCompleteError(null);
       setCelebrationMode("submitted");
       setCelebratingId(choreId);
       await queryClient.cancelQueries({
@@ -264,14 +301,18 @@ export function ChoresList({ members }: { members: Profile[] }) {
       );
       return { previous };
     },
-    onError: (_err, _id, context) => {
+    onError: (err, _vars, context) => {
       setCelebratingId(null);
+      setCompleteError(err instanceof Error ? err.message : "Failed");
       if (context?.previous) {
         queryClient.setQueryData(
           queryKeys.chores(house.id),
           context.previous,
         );
       }
+    },
+    onSuccess: (result) => {
+      if (result?.uploadError) setActionError(result.uploadError);
     },
     onSettled: () => {
       setTimeout(() => setCelebratingId(null), 600);
@@ -280,14 +321,32 @@ export function ChoresList({ members }: { members: Profile[] }) {
   });
 
   const completeMutation = useMutation({
-    mutationFn: async (choreId: string) => {
+    mutationFn: async ({
+      choreId,
+      imageFile,
+    }: {
+      choreId: string;
+      imageFile: File | null;
+    }) => {
       const supabase = createClient();
       const { error } = await supabase.rpc("complete_chore", {
         p_chore_id: choreId,
       });
       if (error) throw error;
+      let uploadError: string | null = null;
+      if (imageFile) {
+        const attach = await attachChoreInstantProofFromFile(
+          house.id,
+          choreId,
+          imageFile,
+        );
+        if (!attach.ok) uploadError = attach.error;
+      }
+      return { uploadError };
     },
-    onMutate: async (choreId) => {
+    onMutate: async ({ choreId }) => {
+      setCompleteTarget(null);
+      setCompleteError(null);
       setCelebrationMode("completed");
       setCelebratingId(choreId);
       await queryClient.cancelQueries({
@@ -312,8 +371,9 @@ export function ChoresList({ members }: { members: Profile[] }) {
       );
       return { previous };
     },
-    onError: (_err, _id, context) => {
+    onError: (err, _vars, context) => {
       setCelebratingId(null);
+      setCompleteError(err instanceof Error ? err.message : "Failed");
       if (context?.previous) {
         queryClient.setQueryData(
           queryKeys.chores(house.id),
@@ -321,11 +381,32 @@ export function ChoresList({ members }: { members: Profile[] }) {
         );
       }
     },
+    onSuccess: (result) => {
+      if (result?.uploadError) setActionError(result.uploadError);
+    },
     onSettled: () => {
       setTimeout(() => setCelebratingId(null), 600);
       invalidateChores();
     },
   });
+
+  function openCompleteModal(
+    chore: Chore,
+    mode: "submit" | "admin_complete",
+  ) {
+    setCompleteError(null);
+    setCompleteTarget({ chore, mode });
+  }
+
+  function handleCompleteConfirm(imageFile: File | null) {
+    if (!completeTarget) return;
+    const { chore, mode } = completeTarget;
+    if (mode === "submit") {
+      submitMutation.mutate({ choreId: chore.id, imageFile });
+    } else {
+      completeMutation.mutate({ choreId: chore.id, imageFile });
+    }
+  }
 
   const canClaim = (chore: Chore) =>
     !isAdmin &&
@@ -467,8 +548,8 @@ export function ChoresList({ members }: { members: Profile[] }) {
       return (
         <button
           type="button"
-          disabled={submitMutation.isPending}
-          onClick={() => submitMutation.mutate(chore.id)}
+          disabled={submitMutation.isPending || completeMutation.isPending}
+          onClick={() => openCompleteModal(chore, "submit")}
           className="btn-press btn-primary text-label-md min-w-[4.5rem] rounded-xl px-4 py-2 font-bold shadow-sm transition-colors hover:brightness-95"
         >
           {t("done")}
@@ -491,8 +572,8 @@ export function ChoresList({ members }: { members: Profile[] }) {
       return (
         <button
           type="button"
-          disabled={completeMutation.isPending}
-          onClick={() => completeMutation.mutate(chore.id)}
+          disabled={submitMutation.isPending || completeMutation.isPending}
+          onClick={() => openCompleteModal(chore, "admin_complete")}
           className="btn-press btn-primary text-label-md min-w-[4.5rem] rounded-xl px-4 py-2 font-bold shadow-sm transition-colors hover:brightness-95"
         >
           {t("done")}
@@ -512,6 +593,12 @@ export function ChoresList({ members }: { members: Profile[] }) {
   return (
     <>
       <ChoreHubHero totalXp={profile.total_xp} rank={rank} />
+
+      {actionError && (
+        <p className="text-body-md text-error rounded-xl bg-error-container/30 px-4 py-3" role="alert">
+          {actionError}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-gutter xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-8">
@@ -557,6 +644,23 @@ export function ChoresList({ members }: { members: Profile[] }) {
                             <p className="text-on-surface-variant text-label-sm mt-1">
                               {t("submittedBy", { name: submitterName })}
                             </p>
+                          )}
+                          {chore.pending_completion?.proof_image_url && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewerImage({
+                                  url: chore.pending_completion!.proof_image_url!,
+                                  title: chore.title,
+                                })
+                              }
+                              className="btn-press mt-2 flex items-center gap-2 rounded-xl bg-surface-container-high px-3 py-2"
+                            >
+                              <MaterialIcon name="photo" size={18} />
+                              <span className="text-label-sm font-semibold">
+                                {ta("viewPhoto")}
+                              </span>
+                            </button>
                           )}
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -757,6 +861,26 @@ export function ChoresList({ members }: { members: Profile[] }) {
           error={formError}
         />
       )}
+
+      <ChoreCompleteModal
+        open={completeTarget !== null}
+        chore={completeTarget?.chore ?? null}
+        mode={completeTarget?.mode ?? "submit"}
+        loading={submitMutation.isPending || completeMutation.isPending}
+        error={completeError}
+        onClose={() => {
+          setCompleteTarget(null);
+          setCompleteError(null);
+        }}
+        onConfirm={handleCompleteConfirm}
+      />
+
+      <ImageViewerDialog
+        open={viewerImage !== null}
+        imageUrl={viewerImage?.url ?? null}
+        title={viewerImage?.title}
+        onClose={() => setViewerImage(null)}
+      />
     </>
   );
 }
