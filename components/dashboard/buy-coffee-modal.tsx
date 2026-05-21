@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 export const INSTAPAY_COFFEE_URL =
   "https://ipn.eg/S/tarek.hassan38/instapay/838qzp";
 
+const DESKTOP_MEDIA_QUERY = "(min-width: 640px)";
+
 type BuyCoffeeModalProps = {
   open: boolean;
   onClose: () => void;
@@ -20,6 +22,7 @@ export function BuyCoffeeModal({ open, onClose }: BuyCoffeeModalProps) {
 
   useEffect(() => {
     if (!open || !canvasRef.current) return;
+    if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
 
     let cancelled = false;
 
@@ -71,15 +74,36 @@ export function BuyCoffeeModal({ open, onClose }: BuyCoffeeModalProps) {
             {t("buyCoffeeQrPitch")}
           </p>
         </div>
-        <p className="text-body-md text-on-surface-variant mt-4">
+        <p className="text-body-md text-on-surface-variant mt-4 sm:hidden">
+          {t("buyCoffeeMobileSubtitle")}
+        </p>
+        <p className="text-body-md text-on-surface-variant mt-4 hidden sm:block">
           {t("buyCoffeeQrSubtitle")}
         </p>
-        <div className="mt-6 flex justify-center">
+
+        <div className="mt-6 flex justify-center sm:hidden">
+          <a
+            href={INSTAPAY_COFFEE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-press bg-primary-container text-on-primary-container inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-label-md font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <MaterialIcon name="open_in_new" size={20} />
+            {t("buyCoffeeLinkBadge")}
+          </a>
+        </div>
+
+        <div className="mt-6 hidden justify-center sm:flex">
           <canvas ref={canvasRef} className="rounded-2xl" aria-hidden />
         </div>
-        <p className="text-label-sm text-on-surface-variant mt-4 text-center">
+
+        <p className="text-label-sm text-on-surface-variant mt-4 text-center sm:hidden">
+          {t("buyCoffeeMobileHint")}
+        </p>
+        <p className="text-label-sm text-on-surface-variant mt-4 hidden text-center sm:block">
           {t("buyCoffeeQrHint")}
         </p>
+
         <Button
           type="button"
           onClick={onClose}

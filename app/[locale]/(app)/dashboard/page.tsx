@@ -10,8 +10,19 @@ import {
   DashboardProvider,
   DashboardQuickActions,
 } from "@/components/dashboard/dashboard-client";
-import { RecentActivityPlaceholder } from "@/components/dashboard/recent-activity-placeholder";
+import {
+  RecentActivityPlaceholder,
+  type DashboardActivityRow,
+} from "@/components/dashboard/recent-activity-placeholder";
 import { formatDate } from "@/lib/format";
+import {
+  approvedCompletionChoreIdsFromRows,
+  mapAdminChoreCompletesToHouseActivity,
+  mapChoreCompletionsToHouseActivity,
+  mapExpensesToHouseActivity,
+  mapShoppingListAddsToHouseActivity,
+  mergeHouseActivity,
+} from "@/lib/house/activity";
 import {
   debtorsWhoOweYou,
   filterUnsettled,
@@ -39,6 +50,10 @@ export default async function DashboardPage() {
     { data: recentExpenses },
     { data: shoppingListRows },
     { data: houseMembers },
+    { data: choreCompletionActivity },
+    { data: approvedCompletionsForDedupe },
+    { data: adminChoreCompletes },
+    { data: recentShoppingAdds },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -69,10 +84,12 @@ export default async function DashboardPage() {
       .eq("house_id", session.house.id),
     supabase
       .from("expenses")
-      .select("title, amount_cents, created_at, payer_id")
+      .select(
+        "id, title, amount_cents, created_at, payer_id, source, receipt_url",
+      )
       .eq("house_id", session.house.id)
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(10),
     supabase
       .from("shopping_list_items")
       .select("id, house_id, title, created_by, created_at")
@@ -84,6 +101,37 @@ export default async function DashboardPage() {
         "id, username, house_role, total_xp, current_level, house_id, avatar_url, created_at",
       )
       .eq("house_id", session.house.id),
+    supabase
+      .from("chore_completions")
+      .select(
+        "id, submitted_by, xp_reward, reviewed_at, proof_image_url, chores!inner(title)",
+      )
+      .eq("house_id", session.house.id)
+      .eq("status", "approved")
+      .not("reviewed_at", "is", null)
+      .order("reviewed_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("chore_completions")
+      .select("chore_id, reviewed_at, status")
+      .eq("house_id", session.house.id)
+      .eq("status", "approved")
+      .not("reviewed_at", "is", null),
+    supabase
+      .from("chores")
+      .select(
+        "id, title, xp_reward, last_completed_at, last_completed_by, last_proof_image_url",
+      )
+      .eq("house_id", session.house.id)
+      .not("last_completed_at", "is", null)
+      .order("last_completed_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("shopping_list_items")
+      .select("id, title, created_by, created_at")
+      .eq("house_id", session.house.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   const shoppingListItems: ShoppingListItem[] = (shoppingListRows ?? []).map(
@@ -98,10 +146,10 @@ export default async function DashboardPage() {
 
   const members: Profile[] = (houseMembers ?? []) as Profile[];
 
-  const payerNames = Object.fromEntries(
+  const memberNames = Object.fromEntries(
     members.map((m) => [m.id, m.username]),
   );
-  const payerAvatars = Object.fromEntries(
+  const memberAvatars = Object.fromEntries(
     members.map((m) => [m.id, m.avatar_url]),
   );
 
@@ -137,13 +185,41 @@ export default async function DashboardPage() {
   const pendingApprovals = (pendingCompletions ?? []).length;
   const leader = entries[0];
 
-  const activityRows = (recentExpenses ?? []).map((expense) => ({
-    username: payerNames[expense.payer_id] ?? tc("unknown"),
-    avatar_url: payerAvatars[expense.payer_id],
-    time: formatDate(expense.created_at, locale),
-    type: "shopping" as const,
-    item: expense.title,
-    amountDisplay: centsToDisplay(expense.amount_cents, { locale }),
+  const approvedChoreIds = approvedCompletionChoreIdsFromRows(
+    approvedCompletionsForDedupe ?? [],
+  );
+
+  const mergedActivity = mergeHouseActivity(
+    [
+      ...mapChoreCompletionsToHouseActivity(choreCompletionActivity ?? []),
+      ...mapAdminChoreCompletesToHouseActivity(
+        adminChoreCompletes ?? [],
+        approvedChoreIds,
+      ),
+      ...mapShoppingListAddsToHouseActivity(recentShoppingAdds ?? []),
+      ...mapExpensesToHouseActivity(
+        (recentExpenses ?? []).map((e) => ({
+          ...e,
+          source: (e.source ?? "ledger") as "ledger" | "shopping",
+        })),
+      ),
+    ],
+    8,
+  );
+
+  const activityRows: DashboardActivityRow[] = mergedActivity.map((item) => ({
+    id: item.id,
+    kind: item.kind,
+    username: memberNames[item.actorId] ?? tc("unknown"),
+    avatar_url: memberAvatars[item.actorId],
+    time: formatDate(item.occurredAt, locale),
+    title: item.title,
+    amountDisplay:
+      item.amountCents != null
+        ? centsToDisplay(item.amountCents, { locale })
+        : undefined,
+    xpReward: item.xpReward,
+    imageUrl: item.imageUrl,
   }));
 
   const dashboardProps = {
@@ -188,9 +264,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {activityRows.length > 0 && (
-        <RecentActivityPlaceholder rows={activityRows} />
-      )}
+      <RecentActivityPlaceholder rows={activityRows} />
 
       <DashboardFab
         isAdmin={dashboardProps.isAdmin}

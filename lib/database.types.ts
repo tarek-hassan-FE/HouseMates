@@ -9,6 +9,8 @@ export type ChoreFrequency =
 
 export type ExpenseStrategy = "equal" | "exact";
 
+export type ExpenseSource = "ledger" | "shopping";
+
 export type NotificationType = "payment_reminder";
 
 export interface Notification {
@@ -81,6 +83,7 @@ export interface Expense {
   title: string;
   amount_cents: number;
   strategy: ExpenseStrategy;
+  source: ExpenseSource;
   receipt_url?: string | null;
   created_at: string;
   payer?: { username: string } | null;
