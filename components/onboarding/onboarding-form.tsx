@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createHouseAction, joinHouseAction } from "@/app/[locale]/(onboarding)/actions";
+import { copyText } from "@/lib/clipboard";
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export function OnboardingForm() {
     }
 
     router.refresh();
-    router.push("/dashboard");
+    router.push("/vault");
   }
 
   if (inviteCode) {
@@ -81,7 +82,7 @@ export function OnboardingForm() {
               type="button"
               variant="outline"
               className="rounded-xl"
-              onClick={() => navigator.clipboard.writeText(inviteCode)}
+              onClick={() => void copyText(inviteCode)}
             >
               {tc("copyCode")}
             </Button>

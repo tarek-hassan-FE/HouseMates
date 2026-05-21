@@ -3,6 +3,20 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
+function supabaseImagePatterns(): Array<{
+  protocol: "https";
+  hostname: string;
+}> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return [];
+  try {
+    const { hostname } = new URL(url);
+    return [{ protocol: "https" as const, hostname }];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   turbopack: {
     // Ensures `next-intl/config` resolves in `next dev` (Turbopack)
@@ -16,6 +30,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      ...supabaseImagePatterns(),
     ],
   },
 };

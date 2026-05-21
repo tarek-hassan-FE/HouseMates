@@ -67,15 +67,20 @@ export async function updateSession(
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("house_id")
+      .select("house_id, vault_intro_seen")
       .eq("id", user.id)
       .single();
 
     const hasHouse = Boolean(profile?.house_id);
+    const vaultIntroSeen = profile?.vault_intro_seen ?? true;
 
     if (isAuthRoute) {
       const url = request.nextUrl.clone();
-      url.pathname = hasHouse ? "/dashboard" : "/onboarding";
+      url.pathname = hasHouse
+        ? vaultIntroSeen
+          ? "/dashboard"
+          : "/vault"
+        : "/onboarding";
       const redirect = NextResponse.redirect(url);
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirect.cookies.set(cookie.name, cookie.value);
@@ -95,7 +100,17 @@ export async function updateSession(
 
     if (hasHouse && pathname === "/onboarding") {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
+      url.pathname = vaultIntroSeen ? "/dashboard" : "/vault";
+      const redirect = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirect.cookies.set(cookie.name, cookie.value);
+      });
+      return redirect;
+    }
+
+    if (hasHouse && !vaultIntroSeen && pathname !== "/vault") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/vault";
       const redirect = NextResponse.redirect(url);
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirect.cookies.set(cookie.name, cookie.value);
@@ -105,7 +120,11 @@ export async function updateSession(
 
     if (pathname === "/") {
       const url = request.nextUrl.clone();
-      url.pathname = hasHouse ? "/dashboard" : "/onboarding";
+      url.pathname = hasHouse
+        ? vaultIntroSeen
+          ? "/dashboard"
+          : "/vault"
+        : "/onboarding";
       const redirect = NextResponse.redirect(url);
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirect.cookies.set(cookie.name, cookie.value);

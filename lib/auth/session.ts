@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { House, Profile } from "@/lib/database.types";
+import { parseVaultData } from "@/lib/vault/types";
 import { redirect } from "next/navigation";
 
 export type SessionContext = {
@@ -22,7 +23,7 @@ export async function requireHouseSession(): Promise<SessionContext> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, house_id, username, avatar_url, total_xp, current_level, house_role, created_at",
+      "id, house_id, username, avatar_url, total_xp, current_level, house_role, vault_intro_seen, created_at",
     )
     .eq("id", user.id)
     .single();
@@ -33,7 +34,7 @@ export async function requireHouseSession(): Promise<SessionContext> {
 
   const { data: house } = await supabase
     .from("houses")
-    .select("id, name, invite_code, created_by, created_at")
+    .select("id, name, invite_code, created_by, created_at, vault_data")
     .eq("id", profile.house_id)
     .single();
 
@@ -44,7 +45,10 @@ export async function requireHouseSession(): Promise<SessionContext> {
   return {
     userId: user.id,
     profile: profile as Profile,
-    house: house as House,
+    house: {
+      ...(house as House),
+      vault_data: parseVaultData(house.vault_data),
+    },
     isAdmin: profile.house_role === "admin",
   };
 }

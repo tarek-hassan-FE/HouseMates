@@ -9,6 +9,8 @@ export type ChoreFrequency =
 
 export type ExpenseStrategy = "equal" | "exact";
 
+import type { HouseVaultData } from "@/lib/vault/types";
+
 export interface Profile {
   id: string;
   house_id: string | null;
@@ -17,6 +19,7 @@ export interface Profile {
   total_xp: number;
   current_level: number;
   house_role: HouseRole;
+  vault_intro_seen?: boolean;
   created_at: string;
 }
 
@@ -26,6 +29,7 @@ export interface House {
   invite_code: string;
   created_by: string | null;
   created_at: string;
+  vault_data: HouseVaultData;
 }
 
 export interface ChorePendingCompletion {

@@ -16,6 +16,7 @@ import {
   updateHouseNameAction,
 } from "@/app/[locale]/(app)/settings/actions";
 import type { Profile } from "@/lib/database.types";
+import { copyText } from "@/lib/clipboard";
 
 export function SettingsPanel({
   members,
@@ -129,7 +130,7 @@ export function SettingsPanel({
             type="button"
             variant="outline"
             className="rounded-xl"
-            onClick={() => navigator.clipboard.writeText(inviteCode)}
+            onClick={() => void copyText(inviteCode)}
           >
             {tc("copyCode")}
           </Button>

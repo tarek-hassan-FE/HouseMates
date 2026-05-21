@@ -12,6 +12,7 @@ import { LocaleSwitcher } from "@/components/locale/locale-switcher";
 
 const sidebarNav = [
   { href: "/dashboard", key: "dashboard", icon: "dashboard" },
+  { href: "/vault", key: "vault", icon: "home_storage" },
   { href: "/chores", key: "chores", icon: "task_alt" },
   { href: "/rewards", key: "rewards", icon: "redeem" },
   { href: "/ledger", key: "finances", icon: "payments" },
@@ -21,16 +22,18 @@ const sidebarNav = [
 
 const mobileNav = [
   { href: "/dashboard", key: "dashboard", icon: "dashboard" },
+  { href: "/vault", key: "vault", icon: "home_storage" },
   { href: "/chores", key: "chores", icon: "task_alt" },
   { href: "/shopping", key: "shoppingList", icon: "shopping_cart" },
   { href: "/ledger", key: "finances", icon: "payments" },
-  { href: "/settings", key: "houseSettings", icon: "settings" },
 ] as const;
 
 function mobileNavLinkClass(active: boolean) {
   return cn(
-    "btn-press flex size-11 items-center justify-center rounded-full",
-    active ? "text-primary" : "text-on-surface-variant",
+    "btn-press mx-auto flex size-11 items-center justify-center rounded-full transition-colors",
+    active
+      ? "bg-primary text-primary-foreground"
+      : "text-on-surface-variant",
   );
 }
 
@@ -78,12 +81,18 @@ export function AppTopBar() {
               <span className="bg-error absolute top-1 end-1 size-2 rounded-full border-2 border-white" />
             </button>
             <div className="border-outline-variant/30 flex items-center gap-3 border-s ps-3 sm:ps-4">
-              <AvatarRing
-                src={profile.avatar_url}
-                name={profile.username}
-                size="md"
-                ring="primary"
-              />
+              <Link
+                href="/profile"
+                className="btn-press flex items-center gap-3"
+                aria-label={t("profileAria")}
+              >
+                <AvatarRing
+                  src={profile.avatar_url}
+                  name={profile.username}
+                  size="md"
+                  ring="primary"
+                />
+              </Link>
               <div className="hidden flex-col leading-none lg:flex">
                 <span className="text-label-md text-on-surface font-bold">
                   {profile.username}
