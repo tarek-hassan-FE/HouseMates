@@ -5,7 +5,16 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const handleI18n = createIntlMiddleware(routing);
 
+/** Routes outside app/[locale] — must not be rewritten by next-intl. */
+function skipsI18n(pathname: string): boolean {
+  return pathname.startsWith("/auth");
+}
+
 export async function middleware(request: NextRequest) {
+  if (skipsI18n(request.nextUrl.pathname)) {
+    return updateSession(request);
+  }
+
   const response = handleI18n(request);
   return updateSession(request, response);
 }

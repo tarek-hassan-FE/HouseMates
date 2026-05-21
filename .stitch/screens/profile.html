@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile - HouseMate Harmony</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #f8f9ff;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#e5eeff",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#001a42",
+                      "on-error-container": "#93000a",
+                      "surface-dim": "#cbdbf5",
+                      "outline": "#727785",
+                      "on-tertiary-container": "#f7fff3",
+                      "surface-variant": "#d3e4fe",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "primary": "#0058be",
+                      "tertiary": "#006b2d",
+                      "on-primary-container": "#fefcff",
+                      "secondary-fixed-dim": "#eec200",
+                      "outline-variant": "#c2c6d6",
+                      "primary-container": "#2170e4",
+                      "primary-fixed": "#d8e2ff",
+                      "on-secondary-fixed": "#231b00",
+                      "secondary-container": "#fed01b",
+                      "tertiary-fixed-dim": "#4ae176",
+                      "surface": "#f8f9ff",
+                      "surface-container-low": "#eff4ff",
+                      "tertiary-fixed": "#6bff8f",
+                      "secondary-fixed": "#ffe083",
+                      "inverse-surface": "#213145",
+                      "tertiary-container": "#00873b",
+                      "on-surface": "#0b1c30",
+                      "on-secondary-fixed-variant": "#574500",
+                      "on-secondary": "#ffffff",
+                      "surface-container-high": "#dce9ff",
+                      "secondary": "#735c00",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#424754",
+                      "on-primary-fixed-variant": "#004395",
+                      "background": "#f8f9ff",
+                      "primary-fixed-dim": "#adc6ff",
+                      "on-tertiary-fixed-variant": "#005321",
+                      "on-tertiary-fixed": "#002109",
+                      "on-primary": "#ffffff",
+                      "on-background": "#0b1c30",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-secondary-container": "#6f5900",
+                      "inverse-primary": "#adc6ff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#005ac2",
+                      "on-tertiary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "8px",
+                      "container-max": "1200px",
+                      "xl": "64px",
+                      "sm": "12px",
+                      "margin-mobile": "16px",
+                      "xs": "4px",
+                      "md": "24px",
+                      "lg": "40px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "label-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "display-lg": ["Plus Jakarta Sans"],
+                      "body-lg": ["Inter"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopNavBar -->
+<header class="bg-surface/60 dark:bg-surface-container/60 backdrop-blur-xl text-primary dark:text-primary-fixed shadow-sm docked full-width top-0 sticky z-40 border-b border-outline-variant/30 flex justify-between items-center w-full px-base md:px-lg h-16">
+<div class="flex items-center gap-base">
+<span class="text-headline-md font-headline-md text-primary dark:text-primary-fixed tracking-tight">HouseMate Harmony</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-base text-on-surface-variant font-medium">
+<span class="text-on-surface-variant font-medium">Level 12 Pro</span>
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</div>
+<img alt="User avatar" class="w-10 h-10 rounded-full object-cover border-2 border-primary" data-alt="A professional headshot of a smiling man in his late 20s with short hair and a friendly expression. The background is a clean, softly lit modern apartment with a hint of a bookshelf. The lighting is warm and natural, creating a welcoming and approachable aura. The overall aesthetic is clean-cut and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDT6aFC2erG524CHIwMMI7yrvkbuYgxEnzSemshtOEuWiGG1RibzgwZWGTasgGcEXjcLYdj6TGrxgQ5I2y1LD7X9XXsKEXkWAPQcXVXb2u31_jgiTM-zyQ9npnmdzZlJL3dQRGTo_xBHPJItnjFZbajYiEyjuglryIFkOi1z9CDNTb3cbFMaLarP0upuIl8KrESdhCF0RNLCvT4BztSWlFBrMUeIAoBRlaECwK_uiAnlRRkVeLhSfJ5szBtCMp-88YpnozHlRiACvlY"/>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col bg-surface dark:bg-surface-dim border-r border-outline-variant/50 pt-20 p-md gap-sm">
+<div class="mb-lg">
+<div class="flex items-center gap-sm p-sm">
+<img alt="Alex Johnson Profile" class="w-12 h-12 rounded-full object-cover" data-alt="A profile photograph of Alex Johnson, a confident young professional with a clean-shaven face and an optimistic smile. He is dressed in a smart-casual light blue shirt. The image is a studio shot with high-key lighting, bright white background, and a soft blue tint to match the brand's primary colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDORNXyR6lRgnRTAprNUDR8Zwdho6usv47LvZ82mGai-yrz9WElFG9uOPFpFYrisdbVeAJWjEuZaeE_K0dTj-0dy70C7jmZK45EixEKCA0-Xh5zQ7W40dTYDLmJw0xgR9391Y_od_MbiqrFZioYIqhsq8KPOoIB-s1KM5_ETV8qFIZFOesNmpGQN-oGfdBLxM1jiLPa2VnY-tdi_OUJ1ifzYCA5zOmDA-LZDAOHIBexZxJcl-Jk7-XcaSl2ABtUCp81FPMCpchO-Mks"/>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Alex Johnson</h4>
+<p class="text-on-surface-variant text-label-sm">Elite Roommate</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-xs flex-1">
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="checklist">checklist</span>
+<span class="font-label-md">Chores</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-md">Finances</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="emoji_events">emoji_events</span>
+<span class="font-label-md">Leaderboard</span>
+</a>
+<a class="flex items-center gap-sm p-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md">House Settings</span>
+</a>
+</nav>
+<button class="w-full bg-primary-container text-on-primary-container font-bold rounded-xl py-sm flex items-center justify-center gap-sm hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Log Chore
+            </button>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 w-full p-md md:p-lg space-y-lg">
+<!-- User Identity Header -->
+<section class="relative bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden">
+<div class="h-32 bg-gradient-to-r from-primary to-primary-container"></div>
+<div class="px-lg pb-lg -mt-12 flex flex-col md:flex-row items-end md:items-center justify-between gap-md">
+<div class="flex items-end gap-md">
+<div class="relative">
+<img alt="Alex Johnson" class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover" data-alt="Close up profile photo of Alex Johnson, featuring a charismatic expression, wearing a minimalist grey hoodie. The lighting is soft and cinematic with a blue ambient glow from the side. The environment is a high-end minimalist loft with blurred city lights in the background. High-quality professional portrait photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPiqTtqYGH4XQZ-TgBH1Mb7NgyGsv-yFHPOAVs3WzIp9i4PMa5hA4-Y25WYa0SJ63gQzdPRTVhv6N89xM1233ZL7AZ_5mA99hYNGDt8Wi0PRtub8nejYxfeZCmUgN3p9uoEBje5lnE9njwMqroa_Hi-jaOH0uI_Yz0N2kR9DHpqYa7xo46n1B3R0X5AuFdXkyauJiVO4nUhMqDPnwZdybGsTFuFzCznHqGeMpUYX7esseDM1LmTPPHUeIKmnWBsEIqm8EmxARHL4ud"/>
+<div class="absolute bottom-1 right-1 bg-secondary-container text-on-secondary-container p-1 rounded-full shadow-md flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified" data-weight="fill">verified</span>
+</div>
+</div>
+<div class="mb-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Alex Johnson</h1>
+<div class="flex items-center gap-sm">
+<span class="text-primary font-bold">Elite Roommate</span>
+<span class="text-on-surface-variant">•</span>
+<span class="text-on-surface-variant">Member since Jan 2023</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl border border-outline-variant/30 min-w-[280px]">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-md text-primary">Level 24</span>
+<span class="text-on-surface-variant font-label-sm">1,250 / 1,500 XP</span>
+</div>
+<div class="w-full bg-outline-variant/30 h-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 83%"></div>
+</div>
+<p class="text-label-sm text-on-surface-variant mt-sm text-right">250 XP to Level 25</p>
+</div>
+</div>
+</section>
+<!-- Impact Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Chores Completed -->
+<div class="bg-white p-lg rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.03)] border-b-4 border-secondary-container relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[64px]" data-icon="task_alt">task_alt</span>
+</div>
+<div class="flex items-center justify-between mb-sm">
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider">Chores Completed</span>
+<span class="bg-tertiary/10 text-tertiary px-sm py-0.5 rounded-full text-label-sm font-bold">Top 5%</span>
+</div>
+<h2 class="text-display-lg font-display-lg text-on-surface">142</h2>
+<p class="text-on-surface-variant text-body-md mt-xs">Consistency is key!</p>
+</div>
+<!-- Total XP Earned -->
+<div class="bg-white p-lg rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.03)] border-b-4 border-primary relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[64px]" data-icon="military_tech">military_tech</span>
+</div>
+<span class="text-on-surface-variant font-label-md uppercase tracking-wider block mb-sm">Total XP Earned</span>
+<h2 class="text-display-lg font-display-lg text-on-surface">12,450</h2>
+<p class="text-on-surface-variant text-body-md mt-xs">Lifetime contribution</p>
+</div>
+<!-- Financial Reliability (Glassmorphism Widget) -->
+<div class="glass-card p-lg rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.05)] border border-white/50 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 group-hover:scale-110 transition-transform text-primary">
+<span class="material-symbols-outlined text-[64px]" data-icon="payments">payments</span>
+</div>
+<span class="text-primary font-label-md uppercase tracking-wider block mb-sm">Financial Reliability</span>
+<h2 class="text-display-lg font-display-lg text-primary">100%</h2>
+<p class="text-on-surface-variant text-body-md mt-xs">On-time payments</p>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Personal Activity Ledger -->
+<section class="lg:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-outline-variant/30">
+<div class="p-md md:p-lg border-b border-outline-variant/20 flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-on-surface">Recent Contributions</h3>
+<button class="text-primary font-label-md hover:underline">View All</button>
+</div>
+<div class="divide-y divide-outline-variant/10">
+<div class="p-md hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary/10 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="cleaning_services">cleaning_services</span>
+</div>
+<div>
+<h5 class="font-label-md text-on-surface">Cleaned Kitchen</h5>
+<p class="text-label-sm text-on-surface-variant">Today, 9:15 AM</p>
+</div>
+</div>
+<span class="font-bold text-tertiary">+50 XP</span>
+</div>
+<div class="p-md hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+</div>
+<div>
+<h5 class="font-label-md text-on-surface">Paid Electricity Bill</h5>
+<p class="text-label-sm text-on-surface-variant">Yesterday, 6:30 PM</p>
+</div>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant px-sm py-1 rounded-full text-label-sm font-bold">Settled</span>
+</div>
+<div class="p-md hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary/10 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="recycling">recycling</span>
+</div>
+<div>
+<h5 class="font-label-md text-on-surface">Took out recycling</h5>
+<p class="text-label-sm text-on-surface-variant">Aug 22, 11:00 PM</p>
+</div>
+</div>
+<span class="font-bold text-tertiary">+20 XP</span>
+</div>
+<div class="p-md hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="shopping_basket">shopping_basket</span>
+</div>
+<div>
+<h5 class="font-label-md text-on-surface">Grocery Restock</h5>
+<p class="text-label-sm text-on-surface-variant">Aug 20, 4:45 PM</p>
+</div>
+</div>
+<span class="font-bold text-tertiary">+35 XP</span>
+</div>
+</div>
+</section>
+<!-- House Role & Settings -->
+<section class="lg:col-span-4 space-y-lg">
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-md">House Role</h3>
+<div class="bg-primary-container/10 p-md rounded-xl border border-primary/20 flex items-center gap-md">
+<div class="bg-primary text-on-primary p-sm rounded-lg">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h4 class="font-label-md text-primary">Finance Lead</h4>
+<p class="text-label-sm text-on-surface-variant">Managing utilities &amp; rent</p>
+</div>
+</div>
+</div>
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-md">Quick Settings</h3>
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications_active">notifications_active</span>
+<span class="font-label-md text-on-surface">Push Notifications</span>
+</div>
+<button class="w-12 h-6 bg-primary rounded-full relative transition-colors duration-200" onclick="toggleSwitch(this)">
+<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all duration-200"></div>
+</button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="visibility">visibility</span>
+<span class="font-label-md text-on-surface">Public Leaderboard</span>
+</div>
+<button class="w-12 h-6 bg-primary rounded-full relative transition-colors duration-200" onclick="toggleSwitch(this)">
+<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all duration-200"></div>
+</button>
+</div>
+<div class="pt-sm">
+<button class="w-full border border-primary text-primary font-bold rounded-xl py-sm hover:bg-primary-container/10 transition-colors">
+                                    Edit Full Profile
+                                </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 bg-surface/80 dark:bg-surface-container-lowest/80 backdrop-blur-lg border-t border-outline-variant/20 shadow-lg md:hidden z-50 rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+<span class="font-label-sm text-label-sm">Chores</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-sm text-label-sm">Pay</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="military_tech">military_tech</span>
+<span class="font-label-sm text-label-sm">Rank</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 px-4 scale-90">
+<span class="material-symbols-outlined" data-icon="settings_accessibility">settings_accessibility</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</div>
+</nav>
+<script>
+        function toggleSwitch(btn) {
+            const circle = btn.querySelector('div');
+            if (btn.classList.contains('bg-primary')) {
+                btn.classList.remove('bg-primary');
+                btn.classList.add('bg-outline-variant');
+                circle.style.right = 'auto';
+                circle.style.left = '4px';
+            } else {
+                btn.classList.remove('bg-outline-variant');
+                btn.classList.add('bg-primary');
+                circle.style.left = 'auto';
+                circle.style.right = '4px';
+            }
+        }
+    </script>
+</body></html>

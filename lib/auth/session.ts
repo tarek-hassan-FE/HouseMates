@@ -23,7 +23,7 @@ export async function requireHouseSession(): Promise<SessionContext> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, house_id, username, avatar_url, total_xp, current_level, house_role, vault_intro_seen, created_at",
+      "id, house_id, username, avatar_url, total_xp, current_level, house_role, vault_intro_seen, push_notifications_enabled, leaderboard_visible, created_at",
     )
     .eq("id", user.id)
     .single();

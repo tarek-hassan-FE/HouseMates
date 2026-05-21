@@ -20,6 +20,8 @@ export interface Profile {
   current_level: number;
   house_role: HouseRole;
   vault_intro_seen?: boolean;
+  push_notifications_enabled?: boolean;
+  leaderboard_visible?: boolean;
   created_at: string;
 }
 

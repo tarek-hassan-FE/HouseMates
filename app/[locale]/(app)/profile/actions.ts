@@ -79,6 +79,43 @@ export async function updateAvatarUrlAction(url: string): Promise<ActionResult> 
   return { success: true };
 }
 
+const preferencesSchema = z.object({
+  pushNotificationsEnabled: z.boolean(),
+  leaderboardVisible: z.boolean(),
+});
+
+export async function updateProfilePreferencesAction(
+  pushNotificationsEnabled: boolean,
+  leaderboardVisible: boolean,
+): Promise<ActionResult> {
+  const parsed = preferencesSchema.safeParse({
+    pushNotificationsEnabled,
+    leaderboardVisible,
+  });
+  if (!parsed.success) {
+    return { success: false, error: "Invalid preferences" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      push_notifications_enabled: parsed.data.pushNotificationsEnabled,
+      leaderboard_visible: parsed.data.leaderboardVisible,
+    })
+    .eq("id", user.id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
 export async function leaveHouseAction(): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("leave_house");

@@ -40,11 +40,15 @@ export function EditableAvatar({
   src,
   name,
   className,
+  avatarClassName,
+  hideCameraBadge,
 }: {
   userId: string;
   src: string | null;
   name: string;
   className?: string;
+  avatarClassName?: string;
+  hideCameraBadge?: boolean;
 }) {
   const t = useTranslations("profile");
   const router = useRouter();
@@ -103,15 +107,17 @@ export function EditableAvatar({
           name={name}
           size="lg"
           ring="primary"
-          className="!size-24 sm:!size-28"
+          className={avatarClassName ?? "!size-24 sm:!size-28"}
         />
-        <span className="bg-primary text-primary-foreground absolute end-0 bottom-0 flex size-9 items-center justify-center rounded-full border-2 border-white shadow-md">
-          {uploading ? (
-            <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <MaterialIcon name="photo_camera" size={18} />
-          )}
-        </span>
+        {!hideCameraBadge && (
+          <span className="bg-primary text-primary-foreground absolute end-0 bottom-0 flex size-9 items-center justify-center rounded-full border-2 border-white shadow-md">
+            {uploading ? (
+              <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <MaterialIcon name="photo_camera" size={18} />
+            )}
+          </span>
+        )}
         {uploading && (
           <span className="absolute inset-0 rounded-full bg-black/30" aria-hidden />
         )}

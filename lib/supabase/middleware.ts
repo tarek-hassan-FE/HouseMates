@@ -2,25 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 
-function cloneResponseWithRequest(
-  source: NextResponse,
-  request: NextRequest,
-): NextResponse {
-  const cloned = NextResponse.next({ request });
-  source.headers.forEach((value, key) => {
-    cloned.headers.set(key, value);
-  });
-  source.cookies.getAll().forEach((cookie) => {
-    cloned.cookies.set(cookie.name, cookie.value);
-  });
-  return cloned;
-}
-
 export async function updateSession(
   request: NextRequest,
   baseResponse?: NextResponse,
 ) {
-  let supabaseResponse = baseResponse ?? NextResponse.next({ request });
+  const supabaseResponse = baseResponse ?? NextResponse.next({ request });
 
   const supabase = createServerClient(
     getSupabaseUrl(),
@@ -31,10 +17,6 @@ export async function updateSession(
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = cloneResponseWithRequest(supabaseResponse, request);
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
           );
@@ -71,8 +53,17 @@ export async function updateSession(
       .eq("id", user.id)
       .single();
 
-    const hasHouse = Boolean(profile?.house_id);
-    const vaultIntroSeen = profile?.vault_intro_seen ?? true;
+    let hasHouse = false;
+    if (profile?.house_id) {
+      const { data: house } = await supabase
+        .from("houses")
+        .select("id")
+        .eq("id", profile.house_id)
+        .maybeSingle();
+      hasHouse = Boolean(house);
+    }
+
+    const vaultIntroSeen = profile?.vault_intro_seen ?? false;
 
     if (isAuthRoute) {
       const url = request.nextUrl.clone();

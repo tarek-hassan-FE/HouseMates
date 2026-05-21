@@ -1,8 +1,12 @@
 "use client";
 
-import { ProfileFinanceSnapshot } from "@/components/profile/profile-finance-snapshot";
-import { ProfileHero } from "@/components/profile/profile-hero";
-import { ProfileSettings } from "@/components/profile/profile-settings";
+import { ProfileActivityFeed } from "@/components/profile/profile-activity-feed";
+import { ProfileDangerZone } from "@/components/profile/profile-danger-zone";
+import { ProfileIdentityHeader } from "@/components/profile/profile-identity-header";
+import { ProfileImpactStats } from "@/components/profile/profile-impact-stats";
+import { ProfileQuickSettings } from "@/components/profile/profile-quick-settings";
+import type { ProfileActivityItem } from "@/lib/profile/activity";
+import type { XpTier } from "@/lib/profile/stats";
 
 type ProfilePanelProps = {
   userId: string;
@@ -11,32 +15,54 @@ type ProfilePanelProps = {
     avatar_url: string | null;
     total_xp: number;
     current_level: number;
+    house_role: "admin" | "member";
+    created_at: string;
+    push_notifications_enabled: boolean;
+    leaderboard_visible: boolean;
   };
-  finance: {
-    netCents: number;
-    youOweCents: number;
-    youreOwedCents: number;
+  stats: {
+    choresCompleted: number;
+    totalXp: number;
+    financialReliability: number;
+    rank: number;
     memberCount: number;
+    topPercent: boolean;
+    xpTier: XpTier;
   };
+  activity: ProfileActivityItem[];
 };
 
-export function ProfilePanel({ userId, profile, finance }: ProfilePanelProps) {
+export function ProfilePanel({ userId, profile, stats, activity }: ProfilePanelProps) {
   return (
-    <div className="max-w-lg mx-auto w-full md:max-w-2xl">
-      <ProfileHero
+    <div className="mx-auto w-full max-w-lg md:max-w-4xl">
+      <ProfileIdentityHeader
         userId={userId}
         username={profile.username}
         avatarUrl={profile.avatar_url}
         totalXp={profile.total_xp}
         currentLevel={profile.current_level}
+        houseRole={profile.house_role}
+        createdAt={profile.created_at}
+        xpTier={stats.xpTier}
       />
-      <ProfileFinanceSnapshot
-        netCents={finance.netCents}
-        youOweCents={finance.youOweCents}
-        youreOwedCents={finance.youreOwedCents}
-        memberCount={finance.memberCount}
+      <ProfileImpactStats
+        choresCompleted={stats.choresCompleted}
+        totalXp={stats.totalXp}
+        financialReliability={stats.financialReliability}
+        topPercent={stats.topPercent}
       />
-      <ProfileSettings username={profile.username} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <ProfileActivityFeed items={activity} />
+        <ProfileQuickSettings
+          userId={userId}
+          username={profile.username}
+          avatarUrl={profile.avatar_url}
+          houseRole={profile.house_role}
+          pushNotificationsEnabled={profile.push_notifications_enabled}
+          leaderboardVisible={profile.leaderboard_visible}
+        />
+      </div>
+      <ProfileDangerZone />
     </div>
   );
 }

@@ -41,6 +41,7 @@ export default async function DashboardPage() {
       .from("profiles")
       .select("username, total_xp, current_level, avatar_url")
       .eq("house_id", session.house.id)
+      .eq("leaderboard_visible", true)
       .order("total_xp", { ascending: false })
       .limit(3),
     supabase
