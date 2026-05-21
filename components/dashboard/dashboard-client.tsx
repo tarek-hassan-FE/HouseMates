@@ -107,12 +107,14 @@ export function DashboardFab({
   isSoloHouse,
   memberCount,
   members,
+  payerId,
   shoppingListItems,
 }: {
   isAdmin: boolean;
   isSoloHouse: boolean;
   memberCount: number;
   members: Profile[];
+  payerId: string;
   shoppingListItems: ShoppingListItem[];
 }) {
   const { openShopping } = useDashboardModals();
@@ -123,6 +125,7 @@ export function DashboardFab({
       isSoloHouse={isSoloHouse}
       memberCount={memberCount}
       members={members}
+      payerId={payerId}
       shoppingListItems={shoppingListItems}
       onOpenShopping={openShopping}
     />
@@ -136,6 +139,7 @@ export function DashboardClient({
   isAdmin,
   isSoloHouse,
   members,
+  payerId,
   shoppingListItems,
 }: {
   pendingChoresCount: number;
@@ -144,6 +148,7 @@ export function DashboardClient({
   isAdmin: boolean;
   isSoloHouse: boolean;
   members: Profile[];
+  payerId: string;
   shoppingListItems: ShoppingListItem[];
 }) {
   return (
@@ -160,6 +165,7 @@ export function DashboardClient({
         isSoloHouse={isSoloHouse}
         memberCount={memberCount}
         members={members}
+        payerId={payerId}
         shoppingListItems={shoppingListItems}
       />
     </DashboardProvider>

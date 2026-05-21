@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseAmountToCents } from "@/lib/money";
 import type { ExpenseStrategy } from "@/lib/database.types";
+import { parseShareFieldsFromFormData, validateExactShares } from "@/lib/split-exact";
+import type { ExactSplitValidationError } from "@/lib/split-exact-validate";
 
 export type ActionResult =
   | { success: true }
@@ -28,7 +30,7 @@ async function requireHouseUser() {
     return { error: t("joinHouseFirst") as string, supabase, user: null };
   }
 
-  return { error: null, supabase, user };
+  return { error: null, supabase, user, houseId: profile.house_id };
 }
 
 function parseExpenseForm(formData: FormData) {
@@ -36,6 +38,13 @@ function parseExpenseForm(formData: FormData) {
   const amountStr = String(formData.get("amount") ?? "");
   const amountCents = parseAmountToCents(amountStr);
   return { title, amountCents };
+}
+
+async function errorMessageForSplit(
+  code: ExactSplitValidationError,
+): Promise<string> {
+  const t = await getTranslations("errors");
+  return t(code);
 }
 
 export async function createExpenseAction(
@@ -62,20 +71,39 @@ export async function createExpenseAction(
       },
     );
     if (error) return { success: false, error: error.message };
-  } else {
-    const { data: profile } = await session.supabase
+  } else if (strategy === "exact") {
+    const { data: members } = await session.supabase
       .from("profiles")
-      .select("house_id")
-      .eq("id", session.user!.id)
-      .single();
-    const { error } = await session.supabase.from("expenses").insert({
-      house_id: profile!.house_id,
-      payer_id: session.user!.id,
-      title,
-      amount_cents: amountCents,
-      strategy,
-    });
+      .select("id")
+      .eq("house_id", session.houseId);
+
+    const memberIds = (members ?? []).map((m) => m.id);
+    const shareStrings = parseShareFieldsFromFormData(formData, memberIds);
+    const validation = validateExactShares(
+      shareStrings,
+      memberIds,
+      amountCents,
+      session.user!.id,
+    );
+
+    if (!validation.ok) {
+      return {
+        success: false,
+        error: await errorMessageForSplit(validation.error),
+      };
+    }
+
+    const { error } = await session.supabase.rpc(
+      "create_expense_with_exact_split",
+      {
+        p_title: title,
+        p_amount_cents: amountCents,
+        p_shares: validation.shares,
+      },
+    );
     if (error) return { success: false, error: error.message };
+  } else {
+    return { success: false, error: t("invalidAmount") };
   }
 
   revalidatePath("/ledger");

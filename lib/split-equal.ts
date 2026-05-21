@@ -32,3 +32,20 @@ export function splitEqualAmongMembers(
 export function totalDebtCents(debts: EqualSplitDebt[]): number {
   return debts.reduce((sum, d) => sum + d.amountCents, 0);
 }
+
+/** Per-member share amounts (cents) for an equal split (payer included). */
+export function equalSharesAmongMembers(
+  amountCents: number,
+  memberIds: string[],
+  payerId: string,
+): Record<string, number> {
+  const sorted = [...memberIds].sort();
+  const debts = splitEqualAmongMembers(amountCents, sorted, payerId);
+  const debtByMember = Object.fromEntries(
+    debts.map((d) => [d.debtorId, d.amountCents]),
+  );
+  const payerShare = amountCents - totalDebtCents(debts);
+  return Object.fromEntries(
+    sorted.map((id) => [id, id === payerId ? payerShare : (debtByMember[id] ?? 0)]),
+  );
+}

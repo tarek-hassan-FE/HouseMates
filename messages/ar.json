@@ -291,6 +291,11 @@
     "split": "التقسيم",
     "splitEqual": "تقسيم متساوٍ",
     "splitExact": "مبالغ محددة",
+    "yourShare": "حصتك",
+    "memberShare": "حصة {name}",
+    "allocatedTotal": "المُخصَّص: {allocated} / {total}",
+    "splitMustEqualTotal": "يجب أن تساوي الحصص المبلغ الإجمالي",
+    "applyEqualSplit": "تقسيم متساوٍ",
     "saving": "جاري الحفظ…",
     "addExpenseBtn": "إضافة مصروف"
   },
@@ -414,6 +419,9 @@
     "joinHouseFirst": "انضم لمنزل أولاً",
     "titleRequired": "العنوان مطلوب",
     "invalidAmount": "أدخل مبلغاً صالحاً",
+    "splitSharesRequired": "أدخل حصة لكل شريك سكن",
+    "splitInvalidShare": "أدخل مبلغاً صالحاً لكل حصة",
+    "splitMustEqualTotal": "يجب أن تساوي الحصص المبلغ الإجمالي",
     "adminOnly": "المديرون فقط يمكنهم القيام بذلك"
   }
 }

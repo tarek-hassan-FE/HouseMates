@@ -23,6 +23,7 @@ import {
   type DebtForBalance,
 } from "@/lib/ledger-balances";
 import { splitEqualAmongMembers } from "@/lib/split-equal";
+import { formatExactSplitBreakdown } from "@/lib/split-exact";
 import type { Expense } from "@/lib/database.types";
 import {
   createExpenseAction,
@@ -214,6 +215,21 @@ export function LedgerPanel({
                 ? t("equalSplit")
                 : t("customSplit");
             const status = expenseSettlementStatus(expense.id, debts);
+            const expenseDebts = debts
+              .filter((d) => d.expense_id === expense.id)
+              .map((d) => ({
+                debtorId: d.debtor_id,
+                amountCents: d.amount_cents,
+              }));
+            const exactBreakdown =
+              expense.strategy === "exact" && expenseDebts.length > 0
+                ? formatExactSplitBreakdown(
+                    expenseDebts,
+                    payerNames,
+                    locale,
+                    (cents, loc) => centsToDisplay(cents, { locale: loc }),
+                  )
+                : null;
             const splitDebts =
               expense.strategy === "equal" && memberCount > 1
                 ? splitEqualAmongMembers(
@@ -243,14 +259,19 @@ export function LedgerPanel({
                         name: payerNames[expense.payer_id] ?? tc("unknown"),
                       })}{" "}
                       · {strategyLabel}
-                      {shareCents != null && memberCount > 1 && (
-                        <>
-                          {" "}
-                          ·{" "}
-                          {t("shareEach", {
-                            amount: centsToDisplay(shareCents, { locale }),
-                          })}
-                        </>
+                      {exactBreakdown ? (
+                        <> · {exactBreakdown}</>
+                      ) : (
+                        shareCents != null &&
+                        memberCount > 1 && (
+                          <>
+                            {" "}
+                            ·{" "}
+                            {t("shareEach", {
+                              amount: centsToDisplay(shareCents, { locale }),
+                            })}
+                          </>
+                        )
                       )}
                     </p>
                   </div>
@@ -324,6 +345,8 @@ export function LedgerPanel({
         loading={loading}
         error={error}
         isSoloHouse={isSoloHouse}
+        members={members}
+        payerId={userId}
       />
     </div>
   );

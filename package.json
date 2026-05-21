@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "icons:generate": "node scripts/generate-pwa-icons.mjs",
-    "test": "node --experimental-strip-types --test lib/split-equal.test.ts lib/ledger-balances.test.ts",
+    "test": "node --experimental-strip-types --test lib/split-equal.test.ts lib/ledger-balances.test.ts lib/split-exact.test.ts",
     "deploy": "npx vercel deploy --prod --yes",
     "deploy:preview": "npx vercel deploy --yes",
     "vercel:env": "bash scripts/sync-vercel-env.sh",

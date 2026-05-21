@@ -20,6 +20,7 @@ type DashboardMobileFabProps = {
   isSoloHouse: boolean;
   memberCount: number;
   members: Profile[];
+  payerId: string;
   shoppingListItems: ShoppingListItem[];
   onOpenShopping?: () => void;
 };
@@ -29,6 +30,7 @@ export function DashboardMobileFab({
   isSoloHouse,
   memberCount,
   members,
+  payerId,
   shoppingListItems,
   onOpenShopping,
 }: DashboardMobileFabProps) {
@@ -198,6 +200,11 @@ export function DashboardMobileFab({
         loading={expenseLoading}
         error={expenseError}
         isSoloHouse={isSoloHouse}
+        members={members.map((m) => ({
+          id: m.id,
+          username: m.username,
+        }))}
+        payerId={payerId}
       />
     </>
   );

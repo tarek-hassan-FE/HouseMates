@@ -291,6 +291,11 @@
     "split": "Split",
     "splitEqual": "Split equally",
     "splitExact": "Exact amounts",
+    "yourShare": "Your share",
+    "memberShare": "{name}'s share",
+    "allocatedTotal": "Allocated: {allocated} / {total}",
+    "splitMustEqualTotal": "Shares must add up to the total amount",
+    "applyEqualSplit": "Split equally",
     "saving": "Saving…",
     "addExpenseBtn": "Add expense"
   },
@@ -414,6 +419,9 @@
     "joinHouseFirst": "Join a house first",
     "titleRequired": "Title is required",
     "invalidAmount": "Enter a valid amount",
+    "splitSharesRequired": "Enter a share for each roommate",
+    "splitInvalidShare": "Enter a valid amount for each share",
+    "splitMustEqualTotal": "Shares must add up to the total amount",
     "adminOnly": "Only house admins can do this"
   }
 }

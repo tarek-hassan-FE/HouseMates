@@ -181,6 +181,7 @@ export default async function DashboardPage() {
         isSoloHouse={dashboardProps.isSoloHouse}
         memberCount={dashboardProps.memberCount}
         members={dashboardProps.members}
+        payerId={session.userId}
         shoppingListItems={dashboardProps.shoppingListItems}
       />
     </DashboardProvider>
