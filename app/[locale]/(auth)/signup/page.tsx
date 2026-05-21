@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import {
+  mapPlatformErrorMessage,
+  type PlatformCapacity,
+} from "@/lib/platform/capacity";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,9 +28,49 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [capacity, setCapacity] = useState<PlatformCapacity | null>(null);
+  const [capacityLoading, setCapacityLoading] = useState(true);
+
+  const signupOpen = capacity?.signup_open ?? true;
+  const formDisabled = loading || capacityLoading || !signupOpen;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCapacity() {
+      const supabase = createClient();
+      const { data, error: capacityError } = await supabase.rpc(
+        "get_platform_capacity",
+      );
+
+      if (!cancelled) {
+        if (!capacityError && data) {
+          setCapacity(data as PlatformCapacity);
+        }
+        setCapacityLoading(false);
+      }
+    }
+
+    void loadCapacity();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function resolveErrorMessage(message: string): string {
+    const key = mapPlatformErrorMessage(message);
+    if (key === "betaUserLimit") {
+      return t("betaUserLimitError");
+    }
+    return message;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!signupOpen) {
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -43,7 +87,7 @@ export default function SignupPage() {
 
     if (signUpError) {
       setLoading(false);
-      setError(signUpError.message);
+      setError(resolveErrorMessage(signUpError.message));
       return;
     }
 
@@ -98,6 +142,14 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!capacityLoading && !signupOpen && (
+            <p
+              className="bg-error-container text-on-surface mb-4 rounded-xl px-4 py-3 text-sm"
+              role="status"
+            >
+              {t("betaUserLimitFull")}
+            </p>
+          )}
           <form
             onSubmit={handleSubmit}
             className="space-y-4"
@@ -111,7 +163,7 @@ export default function SignupPage() {
                 autoComplete="username"
                 required
                 minLength={2}
-                disabled={loading}
+                disabled={formDisabled}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-14 rounded-xl"
@@ -124,7 +176,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                disabled={loading}
+                disabled={formDisabled}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-14 rounded-xl"
@@ -138,7 +190,7 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 minLength={6}
-                disabled={loading}
+                disabled={formDisabled}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-14 rounded-xl"
@@ -151,7 +203,7 @@ export default function SignupPage() {
             )}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={formDisabled}
               className="btn-press bg-primary h-14 w-full rounded-2xl text-base font-bold"
             >
               {loading ? t("creatingAccount") : t("createAccount")}

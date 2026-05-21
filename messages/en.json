@@ -81,7 +81,9 @@
     "backToSignIn": "Back to sign in",
     "emailNotConfirmed": "Please confirm your email using the link we sent, then try signing in again.",
     "confirmedSuccess": "Email confirmed. You can sign in now.",
-    "authCallbackError": "Confirmation link is invalid or expired. Sign up again to request a new link."
+    "authCallbackError": "Confirmation link is invalid or expired. Sign up again to request a new link.",
+    "betaUserLimitFull": "Beta is full — we've reached the maximum of 50 users. Check back later or sign in if you already have an account.",
+    "betaUserLimitError": "Beta is full — we've reached the maximum of 50 users."
   },
   "onboarding": {
     "houseCreated": "House created!",
@@ -96,7 +98,9 @@
     "houseNamePlaceholder": "e.g. Maple Street Apartment",
     "creating": "Creating…",
     "joining": "Joining…",
-    "joinHouse": "Join house"
+    "joinHouse": "Join house",
+    "betaHouseLimitFull": "Beta is full — we've reached the maximum of 10 houses. New houses and invite joins are paused. Ask an existing house admin for an invite once a slot opens, or contact the team.",
+    "betaHouseLimitError": "Beta is full — we've reached the maximum of 10 houses."
   },
   "dashboard": {
     "weeklyLeaderboard": "Weekly Leaderboard Snapshot",
@@ -448,6 +452,66 @@
     "remove": "Remove",
     "removeConfirm": "Remove this roommate from the house?",
     "transferConfirm": "Transfer admin role to this roommate? You will become a member."
+  },
+  "system": {
+    "title": "System",
+    "subtitle": "Platform usage & health",
+    "pageTitle": "System dashboard",
+    "pageDescription": "Aggregate stats across all houses and users. Data is platform-wide and only visible to system admins.",
+    "backToApp": "App",
+    "loadError": "Could not load system stats. Run the latest database migration and ensure your account is in system_admins.",
+    "generatedAt": "Stats generated {time}",
+    "sections": {
+      "limits": "Beta limits",
+      "limitsHint": "Platform caps for the current test period.",
+      "users": "Users",
+      "usersHint": "Registered profiles (one per auth account).",
+      "houses": "Houses",
+      "usage": "Usage & activity",
+      "usageHint": "Chores, expenses, debts, notifications, and rewards across the platform.",
+      "topHouses": "Most active houses",
+      "topHousesHint": "Ranked by total expense count."
+    },
+    "stats": {
+      "betaUsersCap": "Users (beta cap)",
+      "betaHousesCap": "Houses (beta cap)",
+      "signupOpen": "Signups open",
+      "signupClosed": "Signups closed",
+      "onboardingOpen": "Onboarding open",
+      "onboardingClosed": "Onboarding closed",
+      "totalUsers": "Total users",
+      "inHouses": "In a house",
+      "houseRate": "{rate}% joined a house",
+      "signups7d": "Signups (7 days)",
+      "signups30d": "Signups (30 days)",
+      "totalHouses": "Total houses",
+      "newHouses7d": "New houses (7 days)",
+      "newHouses30d": "New houses (30 days)",
+      "avgMembers": "Avg members / house",
+      "totalExpenses": "Total expenses",
+      "expenses7d": "Expenses (7 days)",
+      "expenses30d": "Expenses (30 days)",
+      "ledgerVsShopping": "Ledger / shopping",
+      "ledgerVsShoppingHint": "Expense source breakdown",
+      "chores": "Chore templates",
+      "choreCompletions": "{approved} approved · {pending} pending",
+      "choreActivity7d": "Completions (7 days)",
+      "unsettledDebts": "Unsettled debts",
+      "notifications": "Notifications",
+      "unreadNotifications": "{count} unread",
+      "rewards": "Reward redemptions",
+      "xpSpent": "{xp} XP spent",
+      "shoppingItems": "Shopping list items"
+    },
+    "topHouses": {
+      "title": "Top houses by activity",
+      "description": "Houses with the most logged expenses.",
+      "empty": "No houses yet.",
+      "name": "House",
+      "members": "Members",
+      "expenses": "Expenses",
+      "created": "Created"
+    }
   },
   "errors": {
     "notAuthenticated": "Not authenticated",

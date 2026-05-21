@@ -17,7 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createHouseAction, joinHouseAction } from "@/app/[locale]/(onboarding)/actions";
 import { copyText } from "@/lib/clipboard";
 
-export function OnboardingForm() {
+type OnboardingFormProps = {
+  onboardingOpen: boolean;
+};
+
+export function OnboardingForm({ onboardingOpen }: OnboardingFormProps) {
   const router = useRouter();
   const t = useTranslations("onboarding");
   const tc = useTranslations("common");
@@ -25,7 +29,13 @@ export function OnboardingForm() {
   const [loading, setLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
 
+  const formDisabled = loading || !onboardingOpen;
+
   async function handleCreate(formData: FormData) {
+    if (!onboardingOpen) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     const result = await createHouseAction(formData);
@@ -45,6 +55,10 @@ export function OnboardingForm() {
   }
 
   async function handleJoin(formData: FormData) {
+    if (!onboardingOpen) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     const result = await joinHouseAction(formData);
@@ -109,12 +123,28 @@ export function OnboardingForm() {
         <CardDescription>{t("createOrJoin")}</CardDescription>
       </CardHeader>
       <CardContent>
+        {!onboardingOpen && (
+          <p
+            className="bg-error-container text-on-surface mb-6 rounded-xl px-4 py-3 text-sm"
+            role="status"
+          >
+            {t("betaHouseLimitFull")}
+          </p>
+        )}
         <Tabs defaultValue="create" className="w-full">
           <TabsList className="mb-6 grid w-full grid-cols-2 rounded-xl bg-muted p-1">
-            <TabsTrigger value="create" className="rounded-lg font-semibold">
+            <TabsTrigger
+              value="create"
+              className="rounded-lg font-semibold"
+              disabled={!onboardingOpen}
+            >
               {t("createHouse")}
             </TabsTrigger>
-            <TabsTrigger value="join" className="rounded-lg font-semibold">
+            <TabsTrigger
+              value="join"
+              className="rounded-lg font-semibold"
+              disabled={!onboardingOpen}
+            >
               {t("joinWithCode")}
             </TabsTrigger>
           </TabsList>
@@ -134,6 +164,7 @@ export function OnboardingForm() {
                   name="houseName"
                   placeholder={t("houseNamePlaceholder")}
                   required
+                  disabled={formDisabled}
                   className="h-14 rounded-xl"
                 />
               </div>
@@ -144,7 +175,7 @@ export function OnboardingForm() {
               )}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={formDisabled}
                 className="btn-press h-14 w-full rounded-xl text-base font-bold"
               >
                 {loading ? t("creating") : t("createHouse")}
@@ -167,6 +198,7 @@ export function OnboardingForm() {
                   name="inviteCode"
                   placeholder="ABCD1234"
                   required
+                  disabled={formDisabled}
                   className="h-14 rounded-xl uppercase tracking-widest"
                   onChange={(e) => {
                     e.target.value = e.target.value.toUpperCase();
@@ -180,7 +212,7 @@ export function OnboardingForm() {
               )}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={formDisabled}
                 className="btn-press h-14 w-full rounded-xl text-base font-bold"
               >
                 {loading ? t("joining") : t("joinHouse")}

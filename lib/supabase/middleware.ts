@@ -30,6 +30,7 @@ export async function updateSession(
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const isSystemRoute = pathname.startsWith("/system");
   const isAuthRoute =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
@@ -44,6 +45,20 @@ export async function updateSession(
       redirect.cookies.set(cookie.name, cookie.value);
     });
     return redirect;
+  }
+
+  if (user && isSystemRoute) {
+    const { data: isSystemAdmin } = await supabase.rpc("is_system_admin");
+    if (!isSystemAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      const redirect = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirect.cookies.set(cookie.name, cookie.value);
+      });
+      return redirect;
+    }
+    return supabaseResponse;
   }
 
   if (user) {

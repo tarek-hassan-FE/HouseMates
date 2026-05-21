@@ -1,11 +1,22 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
+import { mapPlatformErrorMessage } from "@/lib/platform/capacity";
 import { createClient } from "@/lib/supabase/server";
 
 export type OnboardingActionResult =
   | { success: true; inviteCode?: string }
   | { success: false; error: string };
+
+async function resolveOnboardingError(message: string): Promise<string> {
+  const key = mapPlatformErrorMessage(message);
+  if (key === "betaHouseLimit") {
+    const t = await getTranslations("onboarding");
+    return t("betaHouseLimitError");
+  }
+  return message;
+}
 
 export async function createHouseAction(
   formData: FormData,
@@ -19,7 +30,7 @@ export async function createHouseAction(
   const { data, error } = await supabase.rpc("create_house", { p_name: name });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: await resolveOnboardingError(error.message) };
   }
 
   const row = Array.isArray(data) ? data[0] : data;
@@ -43,7 +54,7 @@ export async function joinHouseAction(
   const { error } = await supabase.rpc("join_house", { p_invite_code: code });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: await resolveOnboardingError(error.message) };
   }
 
   revalidatePath("/", "layout");
