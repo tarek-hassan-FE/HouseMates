@@ -551,6 +551,49 @@ GRANT EXECUTE ON FUNCTION public.settle_expense_debts(uuid) TO authenticated;
 REVOKE ALL ON FUNCTION public.settle_all_house_debts() FROM public;
 GRANT EXECUTE ON FUNCTION public.settle_all_house_debts() TO authenticated;
 
+CREATE OR REPLACE FUNCTION public.settle_bilateral_debts(p_other_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_house_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_other_user_id = auth.uid() THEN
+    RAISE EXCEPTION 'Cannot settle with yourself';
+  END IF;
+
+  v_house_id := public.user_house_id();
+  IF v_house_id IS NULL THEN
+    RAISE EXCEPTION 'Join a house first';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_other_user_id AND p.house_id = v_house_id
+  ) THEN
+    RAISE EXCEPTION 'Member not found in your house';
+  END IF;
+
+  UPDATE public.debt_ledger
+  SET settled_at = now()
+  WHERE house_id = v_house_id
+    AND settled_at IS NULL
+    AND (
+      (debtor_id = auth.uid() AND creditor_id = p_other_user_id)
+      OR (debtor_id = p_other_user_id AND creditor_id = auth.uid())
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.settle_bilateral_debts(uuid) FROM public;
+GRANT EXECUTE ON FUNCTION public.settle_bilateral_debts(uuid) TO authenticated;
+
 -- Backfill: first member in each house without an admin becomes admin
 UPDATE public.profiles p SET house_role = 'admin'
 FROM public.houses h

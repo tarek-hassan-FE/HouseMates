@@ -13,11 +13,14 @@ import {
 import { RecentActivityPlaceholder } from "@/components/dashboard/recent-activity-placeholder";
 import { formatDate } from "@/lib/format";
 import {
+  debtorsWhoOweYou,
   filterUnsettled,
   netBalanceCents,
   sumYouOweCents,
   sumYoureOwedCents,
 } from "@/lib/ledger-balances";
+import { paymentReminderCooldowns } from "@/lib/payment-reminder-cooldown";
+import { fetchPaymentRemindersSentByActor } from "@/lib/notifications-data";
 import { centsToDisplay } from "@/lib/money";
 import type { Profile, ShoppingListItem } from "@/lib/database.types";
 
@@ -107,6 +110,17 @@ export default async function DashboardPage() {
   const youreOwedCents = sumYoureOwedCents(debtRows, session.userId);
   const netCents = netBalanceCents(debtRows, session.userId);
   const hasUnsettledDebts = filterUnsettled(debtRows).length > 0;
+  const debtorIds = debtorsWhoOweYou(debtRows, session.userId).map(
+    (d) => d.debtorId,
+  );
+  const sentReminders = await fetchPaymentRemindersSentByActor(
+    supabase,
+    session.userId,
+  );
+  const reminderCooldowns = paymentReminderCooldowns(
+    sentReminders,
+    session.userId,
+  );
 
   const entries = (leaderboard ?? []).map((m) => ({
     username: m.username,
@@ -162,6 +176,8 @@ export default async function DashboardPage() {
             youreOwedCents={youreOwedCents}
             memberCount={memberCount ?? 0}
             hasUnsettledDebts={hasUnsettledDebts}
+            debtorIds={debtorIds}
+            reminderCooldowns={reminderCooldowns}
           />
         </div>
         <div className="lg:col-span-7">

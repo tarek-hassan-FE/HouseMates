@@ -14,7 +14,13 @@ import { centsToDisplay } from "@/lib/money";
 import { formatDate } from "@/lib/format";
 import { expenseIconName } from "@/lib/expense-icons";
 import {
+  allDebtorsOnCooldown,
+  eligibleDebtorIds,
+  type ReminderCooldownEntry,
+} from "@/lib/payment-reminder-cooldown";
+import {
   buildDebtRows,
+  debtorsWhoOweYou,
   expenseSettlementStatus,
   filterExpensesByStatus,
   netBalanceCents,
@@ -25,10 +31,12 @@ import {
 import { splitEqualAmongMembers } from "@/lib/split-equal";
 import { formatExactSplitBreakdown } from "@/lib/split-exact";
 import type { Expense } from "@/lib/database.types";
+import { sendPaymentRemindersAction } from "@/app/[locale]/(app)/notifications/actions";
 import {
   createExpenseAction,
   deleteExpenseAction,
   settleAllDebtsAction,
+  settleBilateralDebtsAction,
   settleExpenseAction,
 } from "@/app/[locale]/(app)/ledger/actions";
 
@@ -47,6 +55,7 @@ export function LedgerPanel({
   memberCount,
   payerNames,
   userId,
+  reminderCooldowns: initialCooldowns,
 }: {
   expenses: Expense[];
   debts: DebtForBalance[];
@@ -54,6 +63,7 @@ export function LedgerPanel({
   memberCount: number;
   payerNames: Record<string, string>;
   userId: string;
+  reminderCooldowns: ReminderCooldownEntry[];
 }) {
   const locale = useLocale();
   const t = useTranslations("ledger");
@@ -62,7 +72,10 @@ export function LedgerPanel({
   const { isAdmin } = useHouse();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [settlingMemberId, setSettlingMemberId] = useState<string | null>(null);
+  const [reminding, setReminding] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -92,6 +105,22 @@ export function LedgerPanel({
   );
 
   const hasUnsettledDebts = debts.some((d) => d.settled_at == null);
+
+  const debtorsOwed = useMemo(
+    () => debtorsWhoOweYou(debts, userId),
+    [debts, userId],
+  );
+  const debtorIds = useMemo(
+    () => debtorsOwed.map((d) => d.debtorId),
+    [debtorsOwed],
+  );
+  const eligibleIds = useMemo(
+    () => eligibleDebtorIds(debtorIds, initialCooldowns),
+    [debtorIds, initialCooldowns],
+  );
+  const canRemindMembers = !isSoloHouse && youreOwedCents > 0 && debtorIds.length > 0;
+  const remindDisabled = allDebtorsOnCooldown(debtorIds, initialCooldowns);
+  const remindCooldownHint = remindDisabled ? t("remindAllOnCooldown") : null;
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -133,6 +162,39 @@ export function LedgerPanel({
     else router.refresh();
   }
 
+  async function handleRemindMembers() {
+    const count = eligibleIds.length;
+    if (count === 0) return;
+    if (
+      !(await confirm({
+        message: t("remindMembersConfirm", { count }),
+        confirmLabel: t("remindMembers"),
+      }))
+    )
+      return;
+
+    setReminding(true);
+    setError(null);
+    setSuccess(null);
+    const result = await sendPaymentRemindersAction();
+    setReminding(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    if (result.skippedCount > 0) {
+      setSuccess(
+        t("remindPartial", {
+          sent: result.notifiedCount,
+          skipped: result.skippedCount,
+        }),
+      );
+    } else {
+      setSuccess(t("remindSuccess", { count: result.notifiedCount }));
+    }
+    router.refresh();
+  }
+
   async function handleSettleAll() {
     if (
       !(await confirm({
@@ -145,6 +207,33 @@ export function LedgerPanel({
     setError(null);
     const result = await settleAllDebtsAction();
     setLoading(false);
+    if (!result.success) setError(result.error);
+    else router.refresh();
+  }
+
+  async function handleSettleMember(otherUserId: string) {
+    const row = debtRows.find((r) => r.otherUserId === otherUserId);
+    if (!row) return;
+
+    const name = row.otherUsername;
+    const amount = centsToDisplay(row.amountCents, { locale });
+    const balance =
+      row.direction === "you_owe"
+        ? t("youOweAmount", { amount })
+        : t("owesYouAmount", { amount });
+
+    if (
+      !(await confirm({
+        message: t("settleMemberConfirm", { name, balance }),
+        confirmLabel: t("settleMember"),
+      }))
+    )
+      return;
+
+    setSettlingMemberId(otherUserId);
+    setError(null);
+    const result = await settleBilateralDebtsAction(otherUserId);
+    setSettlingMemberId(null);
     if (!result.success) setError(result.error);
     else router.refresh();
   }
@@ -169,7 +258,14 @@ export function LedgerPanel({
           isSoloHouse={isSoloHouse}
           hasUnsettledDebts={hasUnsettledDebts}
           onSettleAll={handleSettleAll}
+          onSettleMember={handleSettleMember}
           settling={loading}
+          settlingMemberId={settlingMemberId}
+          canRemindMembers={canRemindMembers}
+          remindDisabled={remindDisabled}
+          remindCooldownHint={remindCooldownHint}
+          onRemindMembers={handleRemindMembers}
+          reminding={reminding}
         />
       </section>
 
@@ -199,6 +295,11 @@ export function LedgerPanel({
         {error && (
           <p className="text-destructive text-sm" role="alert">
             {error}
+          </p>
+        )}
+        {success && (
+          <p className="text-tertiary-container text-sm" role="status">
+            {success}
           </p>
         )}
 

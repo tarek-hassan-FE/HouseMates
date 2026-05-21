@@ -25,6 +25,21 @@ export function filterUnsettled<T extends { settled_at: string | null }>(
   return debts.filter(isUnsettled);
 }
 
+/** Unsettled debts between userId and otherUserId (either direction). */
+export function filterBilateralDebts<
+  T extends {
+    settled_at: string | null;
+    debtor_id: string;
+    creditor_id: string;
+  },
+>(debts: T[], userId: string, otherUserId: string): T[] {
+  return filterUnsettled(debts).filter(
+    (d) =>
+      (d.debtor_id === userId && d.creditor_id === otherUserId) ||
+      (d.debtor_id === otherUserId && d.creditor_id === userId),
+  );
+}
+
 export function sumYouOweCents(
   debts: DebtForBalance[],
   userId: string,
@@ -109,4 +124,24 @@ export function buildDebtRows(
   }
 
   return rows;
+}
+
+/** Unsettled debts where user is creditor, grouped by debtor. */
+export function debtorsWhoOweYou(
+  debts: DebtForBalance[],
+  userId: string,
+): { debtorId: string; amountCents: number }[] {
+  const byDebtor = new Map<string, number>();
+
+  for (const d of filterUnsettled(debts)) {
+    if (d.creditor_id !== userId || d.debtor_id === userId) continue;
+    byDebtor.set(
+      d.debtor_id,
+      (byDebtor.get(d.debtor_id) ?? 0) + d.amount_cents,
+    );
+  }
+
+  return [...byDebtor.entries()]
+    .filter(([, amount]) => amount > 0)
+    .map(([debtorId, amountCents]) => ({ debtorId, amountCents }));
 }

@@ -139,6 +139,22 @@ export async function settleAllDebtsAction(): Promise<ActionResult> {
   return { success: true };
 }
 
+export async function settleBilateralDebtsAction(
+  otherUserId: string,
+): Promise<ActionResult> {
+  const session = await requireHouseUser();
+  if (session.error) return { success: false, error: session.error };
+
+  const { error } = await session.supabase.rpc("settle_bilateral_debts", {
+    p_other_user_id: otherUserId,
+  });
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/ledger");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
 export async function deleteExpenseAction(
   expenseId: string,
 ): Promise<ActionResult> {

@@ -17,13 +17,27 @@ export function DebtMatrix({
   isSoloHouse,
   hasUnsettledDebts,
   onSettleAll,
+  onSettleMember,
   settling,
+  settlingMemberId,
+  canRemindMembers,
+  remindDisabled,
+  remindCooldownHint,
+  onRemindMembers,
+  reminding,
 }: {
   rows: DebtRow[];
   isSoloHouse: boolean;
   hasUnsettledDebts: boolean;
   onSettleAll: () => void;
+  onSettleMember: (otherUserId: string) => void;
   settling: boolean;
+  settlingMemberId: string | null;
+  canRemindMembers: boolean;
+  remindDisabled: boolean;
+  remindCooldownHint?: string | null;
+  onRemindMembers: () => void;
+  reminding: boolean;
 }) {
   const locale = useLocale();
   const t = useTranslations("ledger");
@@ -57,21 +71,33 @@ export function DebtMatrix({
                 {row.otherUsername}
               </span>
             </div>
-            <span
-              className={
-                row.direction === "you_owe"
-                  ? "text-label-md text-error shrink-0"
-                  : "text-label-md text-tertiary-container shrink-0"
-              }
-            >
-              {row.direction === "you_owe"
-                ? t("youOweAmount", {
-                    amount: centsToDisplay(row.amountCents, { locale }),
-                  })
-                : t("owesYouAmount", {
-                    amount: centsToDisplay(row.amountCents, { locale }),
-                  })}
-            </span>
+            <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+              <span
+                className={
+                  row.direction === "you_owe"
+                    ? "text-label-md text-error"
+                    : "text-label-md text-tertiary-container"
+                }
+              >
+                {row.direction === "you_owe"
+                  ? t("youOweAmount", {
+                      amount: centsToDisplay(row.amountCents, { locale }),
+                    })
+                  : t("owesYouAmount", {
+                      amount: centsToDisplay(row.amountCents, { locale }),
+                    })}
+              </span>
+              <button
+                type="button"
+                disabled={
+                  settling || settlingMemberId === row.otherUserId || reminding
+                }
+                onClick={() => onSettleMember(row.otherUserId)}
+                className="text-label-sm text-primary font-bold hover:underline disabled:opacity-50"
+              >
+                {t("settleMember")}
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -84,6 +110,23 @@ export function DebtMatrix({
         >
           {t("settleAll")}
         </button>
+      )}
+      {!isSoloHouse && canRemindMembers && (
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            disabled={remindDisabled || reminding || settling}
+            onClick={onRemindMembers}
+            className="text-label-sm text-secondary w-full py-2 text-center font-bold hover:underline disabled:opacity-50"
+          >
+            {t("remindMembers")}
+          </button>
+          {remindCooldownHint && (
+            <p className="text-label-sm text-on-surface-variant px-1 text-center">
+              {remindCooldownHint}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

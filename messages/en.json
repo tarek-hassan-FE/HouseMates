@@ -263,6 +263,8 @@
     "owesYouAmount": "Owes you {amount}",
     "settleAll": "Settle All Balances",
     "settleAllConfirm": "Mark all outstanding balances as settled?",
+    "settleMember": "Settle",
+    "settleMemberConfirm": "Mark your balance with {name} ({balance}) as settled?",
     "markSettled": "Mark settled",
     "soloHouseHint": "Invite a roommate to start splitting expenses and tracking balances.",
     "soloHouseMatrixHint": "Balances appear once another roommate joins your house.",
@@ -297,7 +299,23 @@
     "splitMustEqualTotal": "Shares must add up to the total amount",
     "applyEqualSplit": "Split equally",
     "saving": "Saving…",
-    "addExpenseBtn": "Add expense"
+    "addExpenseBtn": "Add expense",
+    "remindMembers": "Remind members",
+    "remindMembersConfirm": "Send a payment reminder to {count, plural, one {# roommate} other {# roommates}}?",
+    "remindSuccess": "Reminder sent to {count, plural, one {# roommate} other {# roommates}}.",
+    "remindPartial": "Sent to {sent}; {skipped} already reminded in the last 24 hours.",
+    "remindAllOnCooldown": "You can remind again in 24 hours.",
+    "noDebtorsToRemind": "No one currently owes you money.",
+    "allRemindersOnCooldown": "All roommates were already reminded in the last 24 hours.",
+    "remindNotAuthenticated": "Sign in to send reminders."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You're all caught up.",
+    "unreadCount": "{count, plural, one {# unread} other {# unread}}",
+    "markAllRead": "Mark all read",
+    "paymentReminder": "Payment reminder",
+    "viewLedger": "View finances"
   },
   "vault": {
     "welcome": "Welcome to {house}, {name}.",

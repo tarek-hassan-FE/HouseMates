@@ -9,6 +9,7 @@ import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { AvatarRing } from "@/components/design/avatar-ring";
 import { LocaleSwitcher } from "@/components/locale/locale-switcher";
+import { AppNotificationsBell } from "@/components/notifications/app-notifications-bell";
 
 const sidebarNav = [
   { href: "/dashboard", key: "dashboard", icon: "dashboard" },
@@ -72,14 +73,7 @@ export function AppTopBar() {
           </h1>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <LocaleSwitcher />
-            <button
-              type="button"
-              className="btn-press relative flex size-11 items-center justify-center text-on-surface-variant transition-colors hover:text-primary-container"
-              aria-label={t("notifications")}
-            >
-              <MaterialIcon name="notifications" />
-              <span className="bg-error absolute top-1 end-1 size-2 rounded-full border-2 border-white" />
-            </button>
+            <AppNotificationsBell />
             <div className="border-outline-variant/30 flex items-center gap-3 border-s ps-3 sm:ps-4">
               <Link
                 href="/profile"

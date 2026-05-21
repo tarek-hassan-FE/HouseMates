@@ -7,6 +7,12 @@ import { Link } from "@/i18n/navigation";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { useConfirm } from "@/components/providers/confirm-provider";
 import { centsToDisplay } from "@/lib/money";
+import {
+  allDebtorsOnCooldown,
+  eligibleDebtorIds,
+  type ReminderCooldownEntry,
+} from "@/lib/payment-reminder-cooldown";
+import { sendPaymentRemindersAction } from "@/app/[locale]/(app)/notifications/actions";
 import { settleAllDebtsAction } from "@/app/[locale]/(app)/ledger/actions";
 
 export function FinanceStatusCard({
@@ -15,12 +21,16 @@ export function FinanceStatusCard({
   youreOwedCents,
   memberCount,
   hasUnsettledDebts,
+  debtorIds,
+  reminderCooldowns,
 }: {
   netCents: number;
   youOweCents: number;
   youreOwedCents: number;
   memberCount: number;
   hasUnsettledDebts: boolean;
+  debtorIds: string[];
+  reminderCooldowns: ReminderCooldownEntry[];
 }) {
   const locale = useLocale();
   const t = useTranslations("dashboard");
@@ -28,8 +38,45 @@ export function FinanceStatusCard({
   const confirm = useConfirm();
   const router = useRouter();
   const [settling, setSettling] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const [remindMessage, setRemindMessage] = useState<string | null>(null);
   const isSoloHouse = memberCount <= 1;
   const netPositive = netCents >= 0;
+  const eligibleIds = eligibleDebtorIds(debtorIds, reminderCooldowns);
+  const canRemindMembers =
+    !isSoloHouse && youreOwedCents > 0 && debtorIds.length > 0;
+  const remindDisabled = allDebtorsOnCooldown(debtorIds, reminderCooldowns);
+
+  async function handleRemindMembers() {
+    const count = eligibleIds.length;
+    if (count === 0) return;
+    if (
+      !(await confirm({
+        message: tl("remindMembersConfirm", { count }),
+        confirmLabel: tl("remindMembers"),
+      }))
+    )
+      return;
+    setReminding(true);
+    setRemindMessage(null);
+    const result = await sendPaymentRemindersAction();
+    setReminding(false);
+    if (!result.success) {
+      setRemindMessage(result.error);
+      return;
+    }
+    if (result.skippedCount > 0) {
+      setRemindMessage(
+        tl("remindPartial", {
+          sent: result.notifiedCount,
+          skipped: result.skippedCount,
+        }),
+      );
+    } else {
+      setRemindMessage(tl("remindSuccess", { count: result.notifiedCount }));
+    }
+    router.refresh();
+  }
 
   async function handleSettleAll() {
     if (
@@ -96,6 +143,27 @@ export function FinanceStatusCard({
         )}
       </div>
       <div className="relative z-10 mt-8 flex flex-col gap-2">
+        {remindMessage && (
+          <p className="text-tertiary-container text-label-sm" role="status">
+            {remindMessage}
+          </p>
+        )}
+        {!isSoloHouse && canRemindMembers && (
+          <button
+            type="button"
+            disabled={remindDisabled || reminding || settling}
+            onClick={handleRemindMembers}
+            className="btn-press border-outline-variant/40 text-secondary flex w-full items-center justify-center gap-2 rounded-2xl border bg-surface-container-lowest/80 py-4 font-bold transition-colors disabled:opacity-50"
+          >
+            <MaterialIcon name="notifications_active" />
+            {tl("remindMembers")}
+          </button>
+        )}
+        {canRemindMembers && remindDisabled && (
+          <p className="text-label-sm text-on-surface-variant text-center">
+            {tl("remindAllOnCooldown")}
+          </p>
+        )}
         {!isSoloHouse && hasUnsettledDebts && (
           <button
             type="button"

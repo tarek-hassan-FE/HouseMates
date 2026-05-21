@@ -1,5 +1,7 @@
 import { LedgerPanel } from "@/components/ledger/ledger-panel";
 import { requireHouseSession } from "@/lib/auth/session";
+import { paymentReminderCooldowns } from "@/lib/payment-reminder-cooldown";
+import { fetchPaymentRemindersSentByActor } from "@/lib/notifications-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Expense } from "@/lib/database.types";
 
@@ -30,6 +32,15 @@ export default async function LedgerPage() {
     (members ?? []).map((m) => [m.id, m.username]),
   );
 
+  const sentReminders = await fetchPaymentRemindersSentByActor(
+    supabase,
+    session.userId,
+  );
+  const reminderCooldowns = paymentReminderCooldowns(
+    sentReminders,
+    session.userId,
+  );
+
   return (
     <LedgerPanel
       expenses={(expenses ?? []) as Expense[]}
@@ -38,6 +49,7 @@ export default async function LedgerPage() {
       memberCount={(members ?? []).length}
       payerNames={payerNames}
       userId={session.userId}
+      reminderCooldowns={reminderCooldowns}
     />
   );
 }

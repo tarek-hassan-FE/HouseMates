@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildDebtRows,
+  debtorsWhoOweYou,
   expenseSettlementStatus,
+  filterBilateralDebts,
   filterExpensesByStatus,
   filterUnsettled,
   netBalanceCents,
@@ -82,6 +84,28 @@ describe("ledger-balances", () => {
     assert.equal(rows[0].direction, "you_owe");
   });
 
+  it("filterBilateralDebts keeps only unsettled debts between two members", () => {
+    const carol = "carol";
+    const debts = [
+      debt({ debtor_id: userId, creditor_id: bob, amount_cents: 10 }),
+      debt({ debtor_id: bob, creditor_id: userId, amount_cents: 5 }),
+      debt({
+        debtor_id: userId,
+        creditor_id: bob,
+        amount_cents: 99,
+        settled_at: "2025-01-01",
+      }),
+      debt({ debtor_id: userId, creditor_id: carol, amount_cents: 40 }),
+      debt({ debtor_id: carol, creditor_id: bob, amount_cents: 20 }),
+    ];
+    const bilateral = filterBilateralDebts(debts, userId, bob);
+    assert.equal(bilateral.length, 2);
+    assert.equal(
+      bilateral.reduce((s, d) => s + d.amount_cents, 0),
+      15,
+    );
+  });
+
   it("filterUnsettled excludes settled", () => {
     const debts = [
       debt({ debtor_id: userId, creditor_id: bob, amount_cents: 10 }),
@@ -93,6 +117,25 @@ describe("ledger-balances", () => {
       }),
     ];
     assert.equal(filterUnsettled(debts).length, 1);
+  });
+
+  it("debtorsWhoOweYou groups unsettled creditor debts by debtor", () => {
+    const debts = [
+      debt({ debtor_id: bob, creditor_id: userId, amount_cents: 100 }),
+      debt({ debtor_id: bob, creditor_id: userId, amount_cents: 50 }),
+      debt({
+        debtor_id: bob,
+        creditor_id: userId,
+        amount_cents: 20,
+        settled_at: "2025-01-01",
+      }),
+      debt({ debtor_id: userId, creditor_id: bob, amount_cents: 30 }),
+      debt({ debtor_id: "carol", creditor_id: bob, amount_cents: 40 }),
+    ];
+    const result = debtorsWhoOweYou(debts, userId);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].debtorId, bob);
+    assert.equal(result[0].amountCents, 150);
   });
 
   it("dashboard finance contract: net equals owed minus owe", () => {

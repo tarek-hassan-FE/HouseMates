@@ -9,6 +9,22 @@ export type ChoreFrequency =
 
 export type ExpenseStrategy = "equal" | "exact";
 
+export type NotificationType = "payment_reminder";
+
+export interface Notification {
+  id: string;
+  house_id: string;
+  recipient_id: string;
+  actor_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  payload: { amount_cents?: number };
+  read_at: string | null;
+  created_at: string;
+  actor?: { username: string } | null;
+}
+
 import type { HouseVaultData } from "@/lib/vault/types";
 
 export interface Profile {

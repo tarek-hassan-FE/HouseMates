@@ -263,6 +263,8 @@
     "owesYouAmount": "يدين لك {amount}",
     "settleAll": "تسوية جميع الأرصدة",
     "settleAllConfirm": "تسوية جميع الأرصدة المعلقة؟",
+    "settleMember": "تسوية",
+    "settleMemberConfirm": "تسجيل رصيدك مع {name} ({balance}) كمسدد؟",
     "markSettled": "تسجيل كمسدد",
     "soloHouseHint": "ادعُ زميل سكن لبدء تقسيم المصاريف وتتبع الأرصدة.",
     "soloHouseMatrixHint": "تظهر الأرصدة عند انضمام زميل سكن آخر.",
@@ -297,7 +299,23 @@
     "splitMustEqualTotal": "يجب أن تساوي الحصص المبلغ الإجمالي",
     "applyEqualSplit": "تقسيم متساوٍ",
     "saving": "جاري الحفظ…",
-    "addExpenseBtn": "إضافة مصروف"
+    "addExpenseBtn": "إضافة مصروف",
+    "remindMembers": "تذكير الأعضاء",
+    "remindMembersConfirm": "إرسال تذكير بالدفع إلى {count, plural, one {# زميل} other {# زملاء}}؟",
+    "remindSuccess": "تم إرسال التذكير إلى {count, plural, one {# زميل} other {# زملاء}}.",
+    "remindPartial": "تم الإرسال إلى {sent}؛ {skipped} تم تذكيرهم خلال 24 ساعة.",
+    "remindAllOnCooldown": "يمكنك التذكير مرة أخرى بعد 24 ساعة.",
+    "noDebtorsToRemind": "لا أحد مدين لك حالياً.",
+    "allRemindersOnCooldown": "تم تذكير جميع الزملاء خلال آخر 24 ساعة.",
+    "remindNotAuthenticated": "سجّل الدخول لإرسال التذكيرات."
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "empty": "لا إشعارات جديدة.",
+    "unreadCount": "{count, plural, one {# غير مقروء} other {# غير مقروءة}}",
+    "markAllRead": "تعليم الكل كمقروء",
+    "paymentReminder": "تذكير بالدفع",
+    "viewLedger": "عرض المالية"
   },
   "vault": {
     "welcome": "مرحباً في {house}، {name}.",
