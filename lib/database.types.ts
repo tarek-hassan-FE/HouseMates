@@ -67,6 +67,8 @@ export interface Chore {
   description: string | null;
   xp_reward: number;
   frequency: ChoreFrequency;
+  rotate_assignment: boolean;
+  reactivates_at: string | null;
   assigned_to: string | null;
   last_completed_at: string | null;
   last_completed_by: string | null;
@@ -89,14 +91,32 @@ export interface Expense {
   payer?: { username: string } | null;
 }
 
+export interface HouseReward {
+  id: string;
+  house_id: string;
+  preset_key: string | null;
+  title: string;
+  description: string | null;
+  xp_cost: number;
+  icon: string;
+  gradient: string | null;
+  image_url: string | null;
+  is_enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RewardRedemption {
   id: string;
   house_id: string;
   profile_id: string;
   reward_key: string;
+  house_reward_id: string | null;
   xp_spent: number;
   created_at: string;
   profile?: { username: string } | null;
+  house_reward?: { title: string } | null;
 }
 
 export interface ShoppingListItem {

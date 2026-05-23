@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { formatDate } from "@/lib/format";
-import { getRewardEntry, isValidRewardKey, type RewardKey } from "@/lib/rewards-catalog";
+import { resolveRedemptionTitle } from "@/lib/house-rewards";
 import type { RewardRedemption } from "@/lib/database.types";
 
 export function RedemptionHistory({
@@ -26,9 +26,7 @@ export function RedemptionHistory({
     <ul className="space-y-2">
       {redemptions.map((r) => {
         const username = r.profile?.username ?? t("unknownUser");
-        const rewardTitle = isValidRewardKey(r.reward_key)
-          ? t(getRewardEntry(r.reward_key as RewardKey)!.titleKey)
-          : r.reward_key;
+        const rewardTitle = resolveRedemptionTitle(r, t);
 
         return (
           <li

@@ -41,6 +41,7 @@ function parseChoreForm(formData: FormData) {
   ) as ChoreFrequency;
   const xpReward = Number.parseInt(String(formData.get("xp_reward") ?? "10"), 10);
   const assignedTo = String(formData.get("assigned_to") ?? "") || null;
+  const rotateAssignment = formData.get("rotate_assignment") === "on";
 
   return {
     title,
@@ -48,6 +49,7 @@ function parseChoreForm(formData: FormData) {
     frequency,
     xp_reward: Number.isNaN(xpReward) ? 10 : xpReward,
     assigned_to: assignedTo || null,
+    rotate_assignment: frequency === "once" ? false : rotateAssignment,
   };
 }
 
@@ -84,9 +86,14 @@ export async function updateChoreAction(
   if (!fields.title) return { success: false, error: "Title is required" };
 
   const supabase = await createClient();
+  const updatePayload = {
+    ...fields,
+    ...(fields.frequency === "once" ? { reactivates_at: null } : {}),
+  };
+
   const { error } = await supabase
     .from("chores")
-    .update(fields)
+    .update(updatePayload)
     .eq("id", choreId)
     .eq("house_id", admin.houseId);
 

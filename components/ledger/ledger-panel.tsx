@@ -469,7 +469,7 @@ export function LedgerPanel({
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="btn-press bg-primary text-primary-foreground fixed end-6 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-40 flex size-16 items-center justify-center rounded-full shadow-2xl transition-transform hover:scale-110 md:bottom-10"
+        className="btn-press bg-primary text-primary-foreground fixed end-6 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-40 hidden size-16 items-center justify-center rounded-full shadow-2xl transition-transform hover:scale-110 md:flex md:bottom-10"
         aria-label={t("addExpense")}
       >
         <MaterialIcon name="add" size={32} />

@@ -1,23 +1,22 @@
 /**
- * Reward catalog — XP costs are duplicated in
- * supabase/migrations/20250524100000_rewards_shop.sql (redeem_reward RPC).
- * Update both when changing prices or adding rewards.
+ * Default reward templates — seeded into house_rewards via seed_house_rewards().
+ * Legacy redemptions may still reference preset_key / reward_key for i18n fallback.
  */
 
-const REWARD_KEYS = [
-  "pick_friday_movie",
-  "skip_dish_duty",
+export const REWARD_PRESET_KEYS = [
   "dj_cleanup",
+  "pick_friday_movie",
   "comfy_couch_weekend",
-  "veto_chore_assignment",
   "delivery_pick",
+  "veto_chore_assignment",
+  "skip_dish_duty",
   "trash_immunity_week",
 ] as const;
 
-export type RewardKey = (typeof REWARD_KEYS)[number];
+export type RewardPresetKey = (typeof REWARD_PRESET_KEYS)[number];
 
-export type RewardCatalogEntry = {
-  key: RewardKey;
+export type RewardTemplate = {
+  presetKey: RewardPresetKey;
   titleKey: string;
   descKey: string;
   xp: number;
@@ -26,9 +25,9 @@ export type RewardCatalogEntry = {
   icon: string;
 };
 
-export const REWARDS_CATALOG: RewardCatalogEntry[] = [
+export const DEFAULT_REWARD_TEMPLATES: RewardTemplate[] = [
   {
-    key: "dj_cleanup",
+    presetKey: "dj_cleanup",
     titleKey: "djCleanup",
     descKey: "djCleanupDesc",
     xp: 75,
@@ -36,7 +35,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "queue_music",
   },
   {
-    key: "pick_friday_movie",
+    presetKey: "pick_friday_movie",
     titleKey: "pickFridayMovie",
     descKey: "pickFridayMovieDesc",
     xp: 100,
@@ -46,7 +45,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "movie",
   },
   {
-    key: "comfy_couch_weekend",
+    presetKey: "comfy_couch_weekend",
     titleKey: "comfyCouchWeekend",
     descKey: "comfyCouchWeekendDesc",
     xp: 150,
@@ -54,7 +53,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "weekend",
   },
   {
-    key: "delivery_pick",
+    presetKey: "delivery_pick",
     titleKey: "deliveryPick",
     descKey: "deliveryPickDesc",
     xp: 180,
@@ -62,7 +61,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "delivery_dining",
   },
   {
-    key: "veto_chore_assignment",
+    presetKey: "veto_chore_assignment",
     titleKey: "vetoChoreAssignment",
     descKey: "vetoChoreAssignmentDesc",
     xp: 200,
@@ -70,7 +69,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "block",
   },
   {
-    key: "skip_dish_duty",
+    presetKey: "skip_dish_duty",
     titleKey: "skipDishDuty",
     descKey: "skipDishDutyDesc",
     xp: 250,
@@ -80,7 +79,7 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
     icon: "countertops",
   },
   {
-    key: "trash_immunity_week",
+    presetKey: "trash_immunity_week",
     titleKey: "trashImmunityWeek",
     descKey: "trashImmunityWeekDesc",
     xp: 400,
@@ -89,10 +88,12 @@ export const REWARDS_CATALOG: RewardCatalogEntry[] = [
   },
 ];
 
-export function isValidRewardKey(key: string): key is RewardKey {
-  return REWARD_KEYS.includes(key as RewardKey);
+export function isRewardPresetKey(key: string): key is RewardPresetKey {
+  return REWARD_PRESET_KEYS.includes(key as RewardPresetKey);
 }
 
-export function getRewardEntry(key: RewardKey): RewardCatalogEntry | undefined {
-  return REWARDS_CATALOG.find((r) => r.key === key);
+export function getRewardTemplate(
+  key: RewardPresetKey,
+): RewardTemplate | undefined {
+  return DEFAULT_REWARD_TEMPLATES.find((r) => r.presetKey === key);
 }

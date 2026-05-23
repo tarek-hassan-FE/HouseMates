@@ -5,11 +5,7 @@ import { SupportSectionCard } from "@/components/dashboard/buy-coffee-card";
 import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 import { LeaderboardPodium } from "@/components/dashboard/leaderboard-podium";
 import { FinanceStatusCard } from "@/components/dashboard/finance-status-card";
-import {
-  DashboardFab,
-  DashboardProvider,
-  DashboardQuickActions,
-} from "@/components/dashboard/dashboard-client";
+import { DashboardQuickActions } from "@/components/dashboard/dashboard-client";
 import {
   RecentActivityPlaceholder,
   type DashboardActivityRow,
@@ -33,13 +29,17 @@ import {
 import { paymentReminderCooldowns } from "@/lib/payment-reminder-cooldown";
 import { fetchPaymentRemindersSentByActor } from "@/lib/notifications-data";
 import { centsToDisplay } from "@/lib/money";
-import type { Profile, ShoppingListItem } from "@/lib/database.types";
+import type { Profile } from "@/lib/database.types";
 
 export default async function DashboardPage() {
   const session = await requireHouseSession();
   const supabase = await createClient();
   const locale = await getLocale();
   const tc = await getTranslations("common");
+
+  await supabase.rpc("reactivate_due_chores", {
+    p_house_id: session.house.id,
+  });
 
   const [
     { data: leaderboard },
@@ -48,7 +48,6 @@ export default async function DashboardPage() {
     { data: debts },
     { count: memberCount },
     { data: recentExpenses },
-    { data: shoppingListRows },
     { data: houseMembers },
     { data: choreCompletionActivity },
     { data: approvedCompletionsForDedupe },
@@ -91,11 +90,6 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(10),
     supabase
-      .from("shopping_list_items")
-      .select("id, house_id, title, created_by, created_at")
-      .eq("house_id", session.house.id)
-      .order("created_at", { ascending: true }),
-    supabase
       .from("profiles")
       .select(
         "id, username, house_role, total_xp, current_level, house_id, avatar_url, created_at",
@@ -133,16 +127,6 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(10),
   ]);
-
-  const shoppingListItems: ShoppingListItem[] = (shoppingListRows ?? []).map(
-    (row) => ({
-      id: row.id,
-      house_id: row.house_id,
-      title: row.title,
-      created_by: row.created_by,
-      created_at: row.created_at,
-    }),
-  );
 
   const members: Profile[] = (houseMembers ?? []) as Profile[];
 
@@ -225,18 +209,10 @@ export default async function DashboardPage() {
   const dashboardProps = {
     pendingChoresCount: pendingChores,
     pendingApprovalsCount: session.isAdmin ? pendingApprovals : 0,
-    memberCount: memberCount ?? 0,
-    isAdmin: session.isAdmin,
-    isSoloHouse: (memberCount ?? 0) <= 1,
-    members,
-    shoppingListItems,
   };
 
   return (
-    <DashboardProvider
-      memberCount={dashboardProps.memberCount}
-      shoppingListItems={dashboardProps.shoppingListItems}
-    >
+    <>
       <InstallAppPrompt />
       <SupportSectionCard />
       <LeaderboardPodium
@@ -265,15 +241,6 @@ export default async function DashboardPage() {
       </div>
 
       <RecentActivityPlaceholder rows={activityRows} />
-
-      <DashboardFab
-        isAdmin={dashboardProps.isAdmin}
-        isSoloHouse={dashboardProps.isSoloHouse}
-        memberCount={dashboardProps.memberCount}
-        members={dashboardProps.members}
-        payerId={session.userId}
-        shoppingListItems={dashboardProps.shoppingListItems}
-      />
-    </DashboardProvider>
+    </>
   );
 }

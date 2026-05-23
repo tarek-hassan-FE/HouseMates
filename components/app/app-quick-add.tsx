@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { MaterialIcon } from "@/components/design/material-icon";
@@ -9,34 +16,52 @@ import { ShoppingAddModal } from "@/components/shopping/shopping-add-modal";
 import { ExpenseAddModal } from "@/components/ledger/expense-add-modal";
 import { createChoreAction } from "@/app/[locale]/(app)/chores/actions";
 import { createShoppingItemAction } from "@/app/[locale]/(app)/shopping/actions";
-import { useHouse } from "@/components/providers/house-context";
 import { createExpenseAction } from "@/app/[locale]/(app)/ledger/actions";
+import { useHouse } from "@/components/providers/house-context";
 import { attachExpenseReceiptFromFile } from "@/lib/attach-expense-receipt";
+import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
 import type { Profile, ShoppingListItem } from "@/lib/database.types";
 
 type ActiveModal = "chore" | "shopping" | "expense" | null;
 
-type DashboardMobileFabProps = {
+type AppQuickAddContextValue = {
+  openShopping: () => void;
+  openChore: () => void;
+  openExpense: () => void;
+};
+
+const AppQuickAddContext = createContext<AppQuickAddContextValue | null>(null);
+
+export function useAppQuickAdd() {
+  const ctx = useContext(AppQuickAddContext);
+  if (!ctx) {
+    throw new Error("useAppQuickAdd must be used within AppQuickAddProvider");
+  }
+  return ctx;
+};
+
+type AppQuickAddProviderProps = {
+  children: ReactNode;
   isAdmin: boolean;
   isSoloHouse: boolean;
   memberCount: number;
   members: Profile[];
   payerId: string;
   shoppingListItems: ShoppingListItem[];
-  onOpenShopping?: () => void;
 };
 
-export function DashboardMobileFab({
+export function AppQuickAddProvider({
+  children,
   isAdmin,
   isSoloHouse,
   memberCount,
   members,
   payerId,
   shoppingListItems,
-  onOpenShopping,
-}: DashboardMobileFabProps) {
+}: AppQuickAddProviderProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { house } = useHouse();
   const t = useTranslations("dashboard");
   const ta = useTranslations("attachments");
@@ -49,12 +74,23 @@ export function DashboardMobileFab({
   const [shoppingError, setShoppingError] = useState<string | null>(null);
   const [expenseError, setExpenseError] = useState<string | null>(null);
 
-  function openModal(modal: ActiveModal) {
+  const openChore = useCallback(() => {
     setMenuOpen(false);
-    if (modal === "shopping" && onOpenShopping) {
-      onOpenShopping();
-      return;
-    }
+    setActiveModal("chore");
+  }, []);
+
+  const openShopping = useCallback(() => {
+    setMenuOpen(false);
+    setActiveModal("shopping");
+  }, []);
+
+  const openExpense = useCallback(() => {
+    setMenuOpen(false);
+    setActiveModal("expense");
+  }, []);
+
+  function openModalFromMenu(modal: ActiveModal) {
+    setMenuOpen(false);
     setActiveModal(modal);
   }
 
@@ -74,6 +110,9 @@ export function DashboardMobileFab({
       return;
     }
     closeModal();
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.chores(house.id),
+    });
     router.refresh();
   }
 
@@ -81,8 +120,7 @@ export function DashboardMobileFab({
     e.preventDefault();
     setShoppingLoading(true);
     setShoppingError(null);
-    const formData = new FormData(e.currentTarget);
-    const result = await createShoppingItemAction(formData);
+    const result = await createShoppingItemAction(new FormData(e.currentTarget));
     setShoppingLoading(false);
     if (!result.success) {
       setShoppingError(result.error);
@@ -141,10 +179,12 @@ export function DashboardMobileFab({
     (item) => !item.adminOnly || isAdmin,
   );
 
-  const useExternalShopping = Boolean(onOpenShopping);
-
   return (
-    <>
+    <AppQuickAddContext.Provider
+      value={{ openShopping, openChore, openExpense }}
+    >
+      {children}
+
       <div className="md:hidden">
         {menuOpen && (
           <button
@@ -161,7 +201,7 @@ export function DashboardMobileFab({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => openModal(item.id)}
+                onClick={() => openModalFromMenu(item.id)}
                 className="btn-press bg-surface-container-lowest text-on-surface border-outline-variant/30 flex items-center gap-2 rounded-full border py-2 ps-3 pe-4 shadow-lg"
               >
                 <span className="bg-surface-container-high flex size-9 items-center justify-center rounded-full">
@@ -199,17 +239,15 @@ export function DashboardMobileFab({
         />
       )}
 
-      {!useExternalShopping && (
-        <ShoppingAddModal
-          open={activeModal === "shopping"}
-          onClose={closeModal}
-          onSubmit={handleCreateShopping}
-          loading={shoppingLoading}
-          error={shoppingError}
-          memberCount={memberCount}
-          listItems={shoppingListItems}
-        />
-      )}
+      <ShoppingAddModal
+        open={activeModal === "shopping"}
+        onClose={closeModal}
+        onSubmit={handleCreateShopping}
+        loading={shoppingLoading}
+        error={shoppingError}
+        memberCount={memberCount}
+        listItems={shoppingListItems}
+      />
 
       <ExpenseAddModal
         open={activeModal === "expense"}
@@ -224,6 +262,6 @@ export function DashboardMobileFab({
         }))}
         payerId={payerId}
       />
-    </>
+    </AppQuickAddContext.Provider>
   );
 }

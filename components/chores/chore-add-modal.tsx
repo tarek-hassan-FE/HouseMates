@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { isRecurringFrequency } from "@/lib/chore-recurrence";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,11 +38,21 @@ export function ChoreFormModal({
 }: ChoreFormModalProps) {
   const t = useTranslations("chores");
   const tc = useTranslations("common");
+  const [frequency, setFrequency] = useState<ChoreFrequency>(
+    chore?.frequency ?? "weekly",
+  );
+
+  useEffect(() => {
+    if (open) {
+      setFrequency(chore?.frequency ?? "weekly");
+    }
+  }, [open, chore?.id, chore?.frequency]);
 
   if (!open) return null;
 
   const isEdit = mode === "edit" && chore != null;
   const showXpHint = isEdit && chore.last_completed_at != null;
+  const showRotation = isRecurringFrequency(frequency);
 
   return (
     <div
@@ -101,7 +113,10 @@ export function ChoreFormModal({
                 id="frequency"
                 name="frequency"
                 className="border-input h-14 w-full rounded-xl border bg-transparent px-3 text-sm"
-                defaultValue={chore?.frequency ?? "weekly"}
+                value={frequency}
+                onChange={(e) =>
+                  setFrequency(e.target.value as ChoreFrequency)
+                }
               >
                 {(
                   [
@@ -151,6 +166,30 @@ export function ChoreFormModal({
               ))}
             </select>
           </div>
+          {showRotation && (
+            <div className="space-y-2">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="rotate_assignment"
+                  value="on"
+                  defaultChecked={chore?.rotate_assignment ?? false}
+                  className="border-input mt-1 size-4 rounded"
+                />
+                <span className="text-sm">
+                  <span className="text-on-surface font-medium">
+                    {t("rotateAssignment")}
+                  </span>
+                  <span className="text-on-surface-variant mt-0.5 block text-label-sm">
+                    {t("rotateAssignmentHint")}
+                  </span>
+                </span>
+              </label>
+              <p className="text-on-surface-variant text-label-sm">
+                {t("recurrenceUtcHint")}
+              </p>
+            </div>
+          )}
           {error && (
             <p className="text-destructive text-sm" role="alert">
               {error}

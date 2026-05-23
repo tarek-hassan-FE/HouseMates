@@ -20,6 +20,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/queries/keys";
 import { choreIconName } from "@/lib/chore-icons";
+import {
+  isChoreActive,
+  isChoreCompletedDisplay,
+  isChoreInCooldown,
+} from "@/lib/chore-recurrence";
 import type { Chore, ChorePendingCompletion, Profile } from "@/lib/database.types";
 import {
   approveChoreCompletionAction,
@@ -33,6 +38,11 @@ import { cn } from "@/lib/utils";
 
 async function fetchChores(houseId: string): Promise<Chore[]> {
   const supabase = createClient();
+  const { error: reactivateError } = await supabase.rpc("reactivate_due_chores", {
+    p_house_id: houseId,
+  });
+  if (reactivateError) throw reactivateError;
+
   const [choresRes, completionsRes] = await Promise.all([
     supabase
       .from("chores")
@@ -64,6 +74,7 @@ async function fetchChores(houseId: string): Promise<Chore[]> {
 
   return ((choresRes.data ?? []) as Chore[]).map((chore) => ({
     ...chore,
+    rotate_assignment: chore.rotate_assignment ?? false,
     pending_completion: pendingByChoreId[chore.id] ?? null,
   }));
 }
@@ -86,10 +97,14 @@ function ChoreMetaChips({
   chore,
   memberMap,
   t,
+  format,
+  returnsOnDate,
 }: {
   chore: Chore;
   memberMap: Record<string, string>;
   t: ReturnType<typeof useTranslations<"chores">>;
+  format?: ReturnType<typeof useFormatter>;
+  returnsOnDate?: string | null;
 }) {
   const freqLabel = FREQ_KEYS[chore.frequency]
     ? t(FREQ_KEYS[chore.frequency])
@@ -103,6 +118,12 @@ function ChoreMetaChips({
           {memberMap[chore.assigned_to]}
         </span>
       )}
+      {chore.rotate_assignment && (
+        <span className="bg-surface-container-high text-on-surface-variant text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
+          <MaterialIcon name="sync" size={14} />
+          {t("rotationEnabled")}
+        </span>
+      )}
       {chore.pending_completion && (
         <span className="bg-tertiary-container text-on-tertiary-container text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
           <MaterialIcon name="hourglass_top" size={14} />
@@ -113,6 +134,12 @@ function ChoreMetaChips({
         <MaterialIcon name="calendar_today" size={14} />
         {freqLabel}
       </span>
+      {returnsOnDate && format && (
+        <span className="bg-primary-container/40 text-on-primary-container text-label-sm flex items-center gap-1 rounded-full px-2 py-1">
+          <MaterialIcon name="event" size={14} />
+          {t("returnsOn", { date: returnsOnDate })}
+        </span>
+      )}
     </div>
   );
 }
@@ -202,8 +229,10 @@ export function ChoresList({ members }: { members: Profile[] }) {
     queryFn: () => fetchChores(house.id),
   });
 
-  const activeChores = chores.filter((c) => !c.last_completed_at);
-  const completedChores = chores.filter((c) => c.last_completed_at);
+  const activeChores = chores.filter(
+    (c) => isChoreActive(c) && !isChoreCompletedDisplay(c),
+  );
+  const completedChores = chores.filter((c) => isChoreCompletedDisplay(c));
   const pendingApprovalChores = activeChores.filter((c) => c.pending_completion);
   const activeChoresForList = isAdmin
     ? activeChores.filter((c) => !c.pending_completion)
@@ -411,17 +440,27 @@ export function ChoresList({ members }: { members: Profile[] }) {
   const canClaim = (chore: Chore) =>
     !isAdmin &&
     !chore.assigned_to &&
+    !chore.rotate_assignment &&
     !chore.pending_completion &&
-    !chore.last_completed_at;
+    isChoreActive(chore);
 
   const canSubmit = (chore: Chore) =>
     !isAdmin &&
     chore.assigned_to === profile.id &&
     !chore.pending_completion &&
-    !chore.last_completed_at;
+    isChoreActive(chore);
 
   const canAdminComplete = (chore: Chore) =>
-    isAdmin && !chore.pending_completion && !chore.last_completed_at;
+    isAdmin && !chore.pending_completion && isChoreActive(chore);
+
+  function formatReturnsOn(iso: string | null | undefined): string | null {
+    if (!iso) return null;
+    return format.dateTime(new Date(iso), {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
 
   function openEditForm(chore: Chore) {
     setFormMode("edit");
@@ -809,6 +848,12 @@ export function ChoresList({ members }: { members: Profile[] }) {
                             chore={chore}
                             memberMap={memberMap}
                             t={t}
+                            format={format}
+                            returnsOnDate={
+                              isChoreInCooldown(chore)
+                                ? formatReturnsOn(chore.reactivates_at)
+                                : null
+                            }
                           />
                           {completedDate && (
                             <p className="text-on-surface-variant text-label-sm mt-1">
