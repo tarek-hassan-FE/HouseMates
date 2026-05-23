@@ -2,5 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "yarn install --frozen-lockfile",
-  "buildCommand": "yarn build"
+  "buildCommand": "yarn build",
+  "crons": [
+    {
+      "path": "/api/push/process-outbox",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/push/send-chore-reminders",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }

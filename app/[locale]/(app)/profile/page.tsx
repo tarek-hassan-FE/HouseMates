@@ -106,7 +106,7 @@ export default async function ProfilePage() {
           house_role: session.profile.house_role,
           created_at: session.profile.created_at,
           push_notifications_enabled:
-            session.profile.push_notifications_enabled ?? true,
+            session.profile.push_notifications_enabled ?? false,
           leaderboard_visible: session.profile.leaderboard_visible ?? true,
         }}
         stats={{

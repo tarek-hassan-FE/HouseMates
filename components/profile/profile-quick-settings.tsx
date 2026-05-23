@@ -8,6 +8,15 @@ import { ProfileEditModal } from "@/components/profile/profile-edit-modal";
 import { ProfileToggle } from "@/components/profile/profile-toggle";
 import { Button } from "@/components/ui/button";
 import { updateProfilePreferencesAction } from "@/app/[locale]/(app)/profile/actions";
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+  isIosSafari,
+  isPushActiveInBrowser,
+  isPushSupported,
+  isStandalonePwa,
+  getVapidPublicKey,
+} from "@/lib/push-client";
 
 type ProfileQuickSettingsProps = {
   userId: string;
@@ -32,28 +41,96 @@ export function ProfileQuickSettings({
   const [pushEnabled, setPushEnabled] = useState(pushNotificationsEnabled);
   const [leaderboardOn, setLeaderboardOn] = useState(leaderboardVisible);
   const [prefsLoading, setPrefsLoading] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPushEnabled(pushNotificationsEnabled);
+    const activeInBrowser = isPushActiveInBrowser();
+    setPushEnabled(pushNotificationsEnabled && activeInBrowser);
     setLeaderboardOn(leaderboardVisible);
   }, [pushNotificationsEnabled, leaderboardVisible]);
+
+  function pushFailureMessage(err: unknown): string {
+    if (err instanceof Error) {
+      if (err.message.includes("NEXT_PUBLIC_VAPID_PUBLIC_KEY")) {
+        return t("pushVapidMissing");
+      }
+      return err.message;
+    }
+    return t("pushSubscribeFailed");
+  }
 
   async function savePreference(
     nextPush: boolean,
     nextLeaderboard: boolean,
   ) {
-    setPrefsLoading(true);
     const result = await updateProfilePreferencesAction(
       nextPush,
       nextLeaderboard,
     );
-    setPrefsLoading(false);
     if (!result.success) {
       setPushEnabled(pushNotificationsEnabled);
       setLeaderboardOn(leaderboardVisible);
-      return;
+      return false;
     }
     router.refresh();
+    return true;
+  }
+
+  async function handlePushToggle(checked: boolean) {
+    setPushError(null);
+    setPrefsLoading(true);
+
+    try {
+      if (checked) {
+        if (!isPushSupported()) {
+          setPushError(t("pushUnsupported"));
+          return;
+        }
+        if (!getVapidPublicKey()) {
+          setPushError(t("pushVapidMissing"));
+          return;
+        }
+        if (isIosSafari() && !isStandalonePwa()) {
+          setPushError(t("pushIosInstallHint"));
+          return;
+        }
+        const permission = await enablePushNotifications();
+        if (permission === "denied") {
+          setPushError(t("pushPermissionDenied"));
+          return;
+        }
+        if (permission === "unsupported") {
+          setPushError(t("pushUnsupported"));
+          return;
+        }
+
+        const ok = await savePreference(true, leaderboardOn);
+        if (!ok) {
+          await disablePushNotifications();
+          setPushEnabled(false);
+          setPushError(t("pushSubscribeFailed"));
+          return;
+        }
+        setPushEnabled(true);
+      } else {
+        await disablePushNotifications();
+        const ok = await savePreference(false, leaderboardOn);
+        if (!ok) {
+          setPushEnabled(isPushActiveInBrowser() && pushNotificationsEnabled);
+          setPushError(t("pushSubscribeFailed"));
+          return;
+        }
+        setPushEnabled(false);
+      }
+    } catch (err) {
+      setPushError(pushFailureMessage(err));
+      setPushEnabled(isPushActiveInBrowser() && pushNotificationsEnabled);
+      if (checked) {
+        await disablePushNotifications().catch(() => undefined);
+      }
+    } finally {
+      setPrefsLoading(false);
+    }
   }
 
   return (
@@ -103,11 +180,15 @@ export function ProfileQuickSettings({
               checked={pushEnabled}
               disabled={prefsLoading}
               onCheckedChange={(checked) => {
-                setPushEnabled(checked);
-                void savePreference(checked, leaderboardOn);
+                void handlePushToggle(checked);
               }}
             />
           </div>
+          {pushError && (
+            <p className="text-destructive text-label-sm" role="alert">
+              {pushError}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <MaterialIcon
@@ -125,7 +206,11 @@ export function ProfileQuickSettings({
               disabled={prefsLoading}
               onCheckedChange={(checked) => {
                 setLeaderboardOn(checked);
-                void savePreference(pushEnabled, checked);
+                setPrefsLoading(true);
+                void savePreference(pushEnabled, checked).then((ok) => {
+                  setPrefsLoading(false);
+                  if (!ok) setLeaderboardOn(leaderboardVisible);
+                });
               }}
             />
           </div>

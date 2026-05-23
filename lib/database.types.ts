@@ -11,7 +11,21 @@ export type ExpenseStrategy = "equal" | "exact";
 
 export type ExpenseSource = "ledger" | "shopping";
 
-export type NotificationType = "payment_reminder";
+export type NotificationType =
+  | "payment_reminder"
+  | "chore_assigned"
+  | "chore_completed"
+  | "expense_added"
+  | "chore_reminder"
+  | "reward_redeemed";
+
+export type NotificationPayload = {
+  path?: string;
+  amount_cents?: number;
+  chore_id?: string;
+  expense_id?: string;
+  house_reward_id?: string;
+};
 
 export interface Notification {
   id: string;
@@ -21,10 +35,21 @@ export interface Notification {
   type: NotificationType;
   title: string;
   body: string;
-  payload: { amount_cents?: number };
+  payload: NotificationPayload;
   read_at: string | null;
   created_at: string;
   actor?: { username: string } | null;
+}
+
+export interface PushSubscription {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+  last_used_at: string | null;
 }
 
 import type { HouseVaultData } from "@/lib/vault/types";

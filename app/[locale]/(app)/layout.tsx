@@ -6,6 +6,7 @@ import {
 import { AppQuickAddProvider } from "@/components/app/app-quick-add";
 import { HouseProvider } from "@/components/providers/house-context";
 import { NotificationsProvider } from "@/components/providers/notifications-provider";
+import { PushRegistration } from "@/components/pwa/push-registration";
 import { requireHouseSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -72,6 +73,9 @@ export default async function AppLayout({
         initialNotifications={notifications}
         initialUnreadCount={unreadCount}
       >
+        <PushRegistration
+          pushEnabled={session.profile.push_notifications_enabled ?? false}
+        />
         <AppQuickAddProvider
           isAdmin={session.isAdmin}
           isSoloHouse={resolvedMemberCount <= 1}

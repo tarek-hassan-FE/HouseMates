@@ -1,5 +1,5 @@
 import createIntlMiddleware from "next-intl/middleware";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 import { updateSession } from "@/lib/supabase/middleware";
 
@@ -7,10 +7,14 @@ const handleI18n = createIntlMiddleware(routing);
 
 /** Routes outside app/[locale] — must not be rewritten by next-intl. */
 function skipsI18n(pathname: string): boolean {
-  return pathname.startsWith("/auth");
+  return pathname.startsWith("/auth") || pathname.startsWith("/api");
 }
 
 export async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   if (skipsI18n(request.nextUrl.pathname)) {
     return updateSession(request);
   }
