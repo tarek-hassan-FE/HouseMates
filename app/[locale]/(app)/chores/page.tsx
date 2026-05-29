@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
+import { ChoresListSkeleton } from "@/components/app/page-skeletons";
 import { ChoresList } from "@/components/chores/chores-list";
 import { requireHouseSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/server";
 export default async function ChoresPage() {
   const session = await requireHouseSession();
   const supabase = await createClient();
-  const tc = await getTranslations("common");
 
   const { data: members } = await supabase
     .from("profiles")
@@ -17,11 +16,7 @@ export default async function ChoresPage() {
     .eq("house_id", session.house.id);
 
   return (
-    <Suspense
-      fallback={
-        <p className="text-on-surface-variant">{tc("loadingChores")}</p>
-      }
-    >
+    <Suspense fallback={<ChoresListSkeleton />}>
       <ChoresList members={members ?? []} />
     </Suspense>
   );

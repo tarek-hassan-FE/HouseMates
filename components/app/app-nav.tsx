@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useLinkStatus } from "next/link";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/design/material-icon";
@@ -56,6 +57,40 @@ function isActive(pathname: string, href: string, hash: string) {
     return pathname === path && hash === `#${fragment}`;
   }
   return pathname === href;
+}
+
+function NavLinkPending({ children }: { children: ReactNode }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      className={cn(
+        "flex items-center gap-3 transition-opacity",
+        pending && "opacity-60",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MobileNavLinkPending({
+  children,
+  active,
+}: {
+  children: ReactNode;
+  active: boolean;
+}) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      className={cn(
+        mobileNavLinkClass(active),
+        pending && !active && "opacity-60",
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function AppTopBar() {
@@ -115,14 +150,16 @@ export function AppSidebar({ houseName }: { houseName: string }) {
               key={href}
               href={href}
               className={cn(
-                "btn-press text-label-md flex items-center gap-3 rounded-xl px-6 py-3 transition-all",
+                "btn-press text-label-md rounded-xl px-6 py-3 transition-all",
                 active
                   ? "bg-primary-container text-on-primary-container font-bold"
                   : "text-on-surface-variant hover:bg-surface-container-highest",
               )}
             >
-              <MaterialIcon name={icon} filled={active} />
-              {t(key)}
+              <NavLinkPending>
+                <MaterialIcon name={icon} filled={active} />
+                {t(key)}
+              </NavLinkPending>
             </Link>
           );
         })}
@@ -163,11 +200,12 @@ function MobileNavLink({
   return (
     <Link
       href={href}
-      className={mobileNavLinkClass(active)}
       aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
     >
-      <MaterialIcon name={icon} filled={active} size={24} />
+      <MobileNavLinkPending active={active}>
+        <MaterialIcon name={icon} filled={active} size={24} />
+      </MobileNavLinkPending>
     </Link>
   );
 }

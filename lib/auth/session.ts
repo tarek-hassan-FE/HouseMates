@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { House, Profile } from "@/lib/database.types";
 import { parseVaultData } from "@/lib/vault/types";
@@ -10,7 +11,7 @@ export type SessionContext = {
   isAdmin: boolean;
 };
 
-export async function requireHouseSession(): Promise<SessionContext> {
+export const requireHouseSession = cache(async (): Promise<SessionContext> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,4 +52,4 @@ export async function requireHouseSession(): Promise<SessionContext> {
     },
     isAdmin: profile.house_role === "admin",
   };
-}
+});
