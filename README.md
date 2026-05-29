@@ -136,6 +136,11 @@ Set on the Vercel project (Production at minimum):
 |----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable (anon) key from Supabase API settings |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only; push + cron routes) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key |
+| `VAPID_PRIVATE_KEY` | Web Push VAPID private key |
+| `VAPID_SUBJECT` | Web Push contact (e.g. `mailto:you@example.com`) |
+| `CRON_SECRET` | Shared secret for cron/worker API routes |
 
 Sync from local `.env.local`:
 
@@ -144,6 +149,12 @@ npm run vercel:env
 ```
 
 Or add manually in the [Vercel dashboard](https://vercel.com/dodger23s-projects/housemate-harmony/settings/environment-variables).
+
+### Push notification cron (Hobby plan)
+
+Vercel Hobby allows only **once-per-day** cron jobs. Push outbox processing runs via [GitHub Actions](.github/workflows/push-outbox-cron.yml) every 15 minutes instead of a Vercel cron.
+
+One-time setup: add `CRON_SECRET` as a **GitHub repository secret** (Settings → Secrets and variables → Actions) with the same value as in Vercel. Daily chore reminders still use the Vercel cron in [`vercel.json`](vercel.json) (`0 9 * * *`).
 
 ### Supabase auth redirects
 

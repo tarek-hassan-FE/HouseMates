@@ -1,0 +1,16 @@
+name: Push outbox cron
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  process-outbox:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process push outbox
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://housemate-harmony.vercel.app/api/push/process-outbox
