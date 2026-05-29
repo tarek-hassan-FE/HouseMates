@@ -15,7 +15,7 @@ export type DebtRow = {
 export function DebtMatrix({
   rows,
   isSoloHouse,
-  hasUnsettledDebts,
+  canSettleAll,
   onSettleAll,
   onSettleMember,
   settling,
@@ -28,7 +28,7 @@ export function DebtMatrix({
 }: {
   rows: DebtRow[];
   isSoloHouse: boolean;
-  hasUnsettledDebts: boolean;
+  canSettleAll: boolean;
   onSettleAll: () => void;
   onSettleMember: (otherUserId: string) => void;
   settling: boolean;
@@ -87,21 +87,25 @@ export function DebtMatrix({
                       amount: centsToDisplay(row.amountCents, { locale }),
                     })}
               </span>
-              <button
-                type="button"
-                disabled={
-                  settling || settlingMemberId === row.otherUserId || reminding
-                }
-                onClick={() => onSettleMember(row.otherUserId)}
-                className="text-label-sm text-primary font-bold hover:underline disabled:opacity-50"
-              >
-                {t("settleMember")}
-              </button>
+              {row.direction === "owes_you" && (
+                <button
+                  type="button"
+                  disabled={
+                    settling ||
+                    settlingMemberId === row.otherUserId ||
+                    reminding
+                  }
+                  onClick={() => onSettleMember(row.otherUserId)}
+                  className="text-label-sm text-primary font-bold hover:underline disabled:opacity-50"
+                >
+                  {t("settleMember")}
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
-      {!isSoloHouse && hasUnsettledDebts && (
+      {!isSoloHouse && canSettleAll && (
         <button
           type="button"
           disabled={settling}

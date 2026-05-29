@@ -24,13 +24,7 @@ export function isPushSupported(): boolean {
   );
 }
 
-export function isStandalonePwa(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
-}
+export { isRunningAsInstalledPwa as isStandalonePwa } from "@/lib/pwa-client";
 
 export function isIosSafari(): boolean {
   if (typeof navigator === "undefined") return false;

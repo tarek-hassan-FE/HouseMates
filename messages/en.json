@@ -144,6 +144,7 @@
     "installAppDescription": "Add Roomies to your home screen for a full-screen app experience on your phone.",
     "installAppButton": "Install app",
     "installAppIosSteps": "On iPhone or iPad: tap Share, then choose “Add to Home Screen”.",
+    "installAppAndroidSteps": "In Chrome: tap the menu (⋮), then choose “Install app” or “Add to Home screen”.",
     "installAppDesktopHint": "Open this site on your phone’s browser to install it to your home screen.",
     "quickAdd": "Quick add",
     "fabChore": "Chore",
@@ -309,11 +310,11 @@
     "allClear": "All balances are clear.",
     "youOweAmount": "You owe {amount}",
     "owesYouAmount": "Owes you {amount}",
-    "settleAll": "Settle All Balances",
-    "settleAllConfirm": "Mark all outstanding balances as settled?",
-    "settleMember": "Settle",
-    "settleMemberConfirm": "Mark your balance with {name} ({balance}) as settled?",
-    "markSettled": "Mark settled",
+    "settleAll": "Mark All as Received",
+    "settleAllConfirm": "Confirm you received payment for all outstanding debts owed to you?",
+    "settleMember": "Mark received",
+    "settleMemberConfirm": "Confirm you received {balance} from {name}?",
+    "markSettled": "Mark received",
     "soloHouseHint": "Invite a roommate to start splitting expenses and tracking balances.",
     "soloHouseMatrixHint": "Balances appear once another roommate joins your house.",
     "soloHouseAddHint": "Saved for your records. Splits apply when roommates join.",
@@ -561,6 +562,7 @@
     "splitInvalidShare": "Enter a valid amount for each share",
     "splitMustEqualTotal": "Shares must add up to the total amount",
     "adminOnly": "Only house admins can do this",
-    "invalidAttachment": "Invalid attachment URL"
+    "invalidAttachment": "Invalid attachment URL",
+    "nothingToSettle": "Nothing to settle — only the person owed can confirm payment"
   }
 }

@@ -20,7 +20,6 @@ export function FinanceStatusCard({
   youOweCents,
   youreOwedCents,
   memberCount,
-  hasUnsettledDebts,
   debtorIds,
   reminderCooldowns,
 }: {
@@ -28,7 +27,6 @@ export function FinanceStatusCard({
   youOweCents: number;
   youreOwedCents: number;
   memberCount: number;
-  hasUnsettledDebts: boolean;
   debtorIds: string[];
   reminderCooldowns: ReminderCooldownEntry[];
 }) {
@@ -164,7 +162,7 @@ export function FinanceStatusCard({
             {tl("remindAllOnCooldown")}
           </p>
         )}
-        {!isSoloHouse && hasUnsettledDebts && (
+        {!isSoloHouse && youreOwedCents > 0 && (
           <button
             type="button"
             disabled={settling}

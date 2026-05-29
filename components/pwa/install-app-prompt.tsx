@@ -4,70 +4,83 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MaterialIcon } from "@/components/design/material-icon";
 import { Button } from "@/components/ui/button";
+import {
+  type BeforeInstallPromptEvent,
+  clearDeferredInstallPrompt,
+  clearStaleInstallFlag,
+  getDeferredInstallPrompt,
+  isAndroidDevice,
+  isIosDevice,
+  isMobileDevice,
+  registerPwaServiceWorker,
+  shouldHideInstallPrompt,
+  stashDeferredInstallPrompt,
+} from "@/lib/pwa-client";
 
-const PWA_INSTALLED_KEY = "roomies-pwa-installed";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
-function isIosDevice() {
-  if (typeof navigator === "undefined") return false;
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as Window & { MSStream?: unknown }).MSStream
-  );
-}
-
-function isMobileDevice() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-function isStandaloneDisplay() {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
-}
-
-function isAppInstalled() {
-  if (isStandaloneDisplay()) return true;
-  if (typeof localStorage === "undefined") return false;
-  return localStorage.getItem(PWA_INSTALLED_KEY) === "1";
-}
-
-function markAppInstalled() {
-  localStorage.setItem(PWA_INSTALLED_KEY, "1");
-}
+const ANDROID_FALLBACK_DELAY_MS = 500;
 
 export function InstallAppPrompt() {
   const t = useTranslations("dashboard");
   const [shouldHide, setShouldHide] = useState<boolean | null>(null);
   const [isIos, setIsIos] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [installEvent, setInstallEvent] =
     useState<BeforeInstallPromptEvent | null>(null);
+  const [showAndroidFallback, setShowAndroidFallback] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    setShouldHide(isAppInstalled());
+    let cancelled = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+
+    clearStaleInstallFlag();
     setIsIos(isIosDevice());
+    setIsAndroid(isAndroidDevice());
+
+    const deferred = getDeferredInstallPrompt();
+    if (deferred) {
+      setInstallEvent(deferred);
+    }
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      stashDeferredInstallPrompt(promptEvent);
+      setInstallEvent(promptEvent);
+      setShowAndroidFallback(false);
     };
 
     const onAppInstalled = () => {
-      markAppInstalled();
+      clearDeferredInstallPrompt();
+      setInstallEvent(null);
       setShouldHide(true);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onAppInstalled);
+
+    void (async () => {
+      await registerPwaServiceWorker();
+
+      if (cancelled) return;
+
+      const hide = await shouldHideInstallPrompt();
+      if (cancelled) return;
+      setShouldHide(hide);
+
+      if (!hide && isAndroidDevice() && !deferred) {
+        fallbackTimer = setTimeout(() => {
+          if (cancelled) return;
+          if (!getDeferredInstallPrompt()) {
+            setShowAndroidFallback(true);
+          }
+        }, ANDROID_FALLBACK_DELAY_MS);
+      }
+    })();
+
     return () => {
+      cancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onAppInstalled);
     };
@@ -79,8 +92,10 @@ export function InstallAppPrompt() {
 
   const showAndroidInstall = installEvent !== null;
   const showIosSteps = isIos && !showAndroidInstall;
+  const showAndroidSteps =
+    isAndroid && !showAndroidInstall && showAndroidFallback;
   const showDesktopHint =
-    !isIos && !showAndroidInstall && !isMobileDevice();
+    !isIos && !isAndroid && !showAndroidInstall && !isMobileDevice();
 
   async function handleInstall() {
     if (!installEvent) return;
@@ -88,9 +103,9 @@ export function InstallAppPrompt() {
     try {
       await installEvent.prompt();
       const { outcome } = await installEvent.userChoice;
+      clearDeferredInstallPrompt();
       setInstallEvent(null);
       if (outcome === "accepted") {
-        markAppInstalled();
         setShouldHide(true);
       }
     } finally {
@@ -126,6 +141,12 @@ export function InstallAppPrompt() {
           {showIosSteps && (
             <p className="text-body-md text-on-surface-variant mt-4">
               {t("installAppIosSteps")}
+            </p>
+          )}
+
+          {showAndroidSteps && (
+            <p className="text-body-md text-on-surface-variant mt-4">
+              {t("installAppAndroidSteps")}
             </p>
           )}
 

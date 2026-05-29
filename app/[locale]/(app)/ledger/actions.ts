@@ -48,6 +48,14 @@ async function errorMessageForSplit(
   return t(code);
 }
 
+async function errorMessageForSettlement(message: string): Promise<string> {
+  if (message.includes("Nothing to settle")) {
+    const t = await getTranslations("errors");
+    return t("nothingToSettle");
+  }
+  return message;
+}
+
 export async function createExpenseAction(
   formData: FormData,
 ): Promise<ActionResult> {
@@ -71,6 +79,7 @@ export async function createExpenseAction(
       {
         p_title: title,
         p_amount_cents: amountCents,
+        p_source: "ledger",
       },
     );
     if (error) return { success: false, error: error.message };
@@ -148,7 +157,12 @@ export async function settleExpenseAction(
   const { error } = await session.supabase.rpc("settle_expense_debts", {
     p_expense_id: expenseId,
   });
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    return {
+      success: false,
+      error: await errorMessageForSettlement(error.message),
+    };
+  }
 
   revalidatePath("/ledger");
   revalidatePath("/dashboard");
@@ -160,7 +174,12 @@ export async function settleAllDebtsAction(): Promise<ActionResult> {
   if (session.error) return { success: false, error: session.error };
 
   const { error } = await session.supabase.rpc("settle_all_house_debts");
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    return {
+      success: false,
+      error: await errorMessageForSettlement(error.message),
+    };
+  }
 
   revalidatePath("/ledger");
   revalidatePath("/dashboard");
@@ -176,7 +195,12 @@ export async function settleBilateralDebtsAction(
   const { error } = await session.supabase.rpc("settle_bilateral_debts", {
     p_other_user_id: otherUserId,
   });
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    return {
+      success: false,
+      error: await errorMessageForSettlement(error.message),
+    };
+  }
 
   revalidatePath("/ledger");
   revalidatePath("/dashboard");
@@ -186,8 +210,13 @@ export async function settleBilateralDebtsAction(
 export async function deleteExpenseAction(
   expenseId: string,
 ): Promise<ActionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("expenses").delete().eq("id", expenseId);
+  const session = await requireHouseUser();
+  if (session.error) return { success: false, error: session.error };
+
+  const { error } = await session.supabase
+    .from("expenses")
+    .delete()
+    .eq("id", expenseId);
 
   if (error) return { success: false, error: error.message };
 

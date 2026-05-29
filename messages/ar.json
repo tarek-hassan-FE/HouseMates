@@ -144,6 +144,7 @@
     "installAppDescription": "أضف Roomies إلى الشاشة الرئيسية لتجربة تطبيق كاملة على هاتفك.",
     "installAppButton": "تثبيت التطبيق",
     "installAppIosSteps": "على iPhone أو iPad: اضغط مشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية».",
+    "installAppAndroidSteps": "في Chrome: اضغط القائمة (⋮)، ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».",
     "installAppDesktopHint": "افتح هذا الموقع في متصفح هاتفك لتثبيته على الشاشة الرئيسية.",
     "quickAdd": "إضافة سريعة",
     "fabChore": "مهمة",
@@ -309,11 +310,11 @@
     "allClear": "جميع الأرصدة مسددة.",
     "youOweAmount": "أنت مدين {amount}",
     "owesYouAmount": "يدين لك {amount}",
-    "settleAll": "تسوية جميع الأرصدة",
-    "settleAllConfirm": "تسوية جميع الأرصدة المعلقة؟",
-    "settleMember": "تسوية",
-    "settleMemberConfirm": "تسجيل رصيدك مع {name} ({balance}) كمسدد؟",
-    "markSettled": "تسجيل كمسدد",
+    "settleAll": "تسجيل الكل كمستلم",
+    "settleAllConfirm": "تأكيد استلامك لجميع الديون المستحقة لك؟",
+    "settleMember": "تسجيل الاستلام",
+    "settleMemberConfirm": "تأكيد استلامك {balance} من {name}؟",
+    "markSettled": "تسجيل الاستلام",
     "soloHouseHint": "ادعُ زميل سكن لبدء تقسيم المصاريف وتتبع الأرصدة.",
     "soloHouseMatrixHint": "تظهر الأرصدة عند انضمام زميل سكن آخر.",
     "soloHouseAddHint": "يُحفظ للسجل. يُطبَّق التقسيم عند انضمام زملاء السكن.",
@@ -561,6 +562,7 @@
     "splitInvalidShare": "أدخل مبلغاً صالحاً لكل حصة",
     "splitMustEqualTotal": "يجب أن تساوي الحصص المبلغ الإجمالي",
     "adminOnly": "المديرون فقط يمكنهم القيام بذلك",
-    "invalidAttachment": "رابط المرفق غير صالح"
+    "invalidAttachment": "رابط المرفق غير صالح",
+    "nothingToSettle": "لا يوجد ما يُسوّى — فقط الدائن يمكنه تأكيد استلام الدفع"
   }
 }

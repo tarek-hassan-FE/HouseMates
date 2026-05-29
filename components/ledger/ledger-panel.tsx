@@ -111,7 +111,7 @@ export function LedgerPanel({
     [expenses, debts, filter],
   );
 
-  const hasUnsettledDebts = debts.some((d) => d.settled_at == null);
+  const canSettleAll = youreOwedCents > 0;
 
   const debtorsOwed = useMemo(
     () => debtorsWhoOweYou(debts, userId),
@@ -277,7 +277,7 @@ export function LedgerPanel({
         <DebtMatrix
           rows={debtRows}
           isSoloHouse={isSoloHouse}
-          hasUnsettledDebts={hasUnsettledDebts}
+          canSettleAll={canSettleAll}
           onSettleAll={handleSettleAll}
           onSettleMember={handleSettleMember}
           settling={loading}
@@ -423,16 +423,18 @@ export function LedgerPanel({
                       variant={status === "settled" ? "settled" : "pending"}
                     />
                   )}
-                  {status === "pending" && !isSoloHouse && (
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => handleSettleExpense(expense.id)}
-                      className="text-label-sm text-primary font-bold hover:underline"
-                    >
-                      {t("markSettled")}
-                    </button>
-                  )}
+                  {status === "pending" &&
+                    !isSoloHouse &&
+                    expense.payer_id === userId && (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleSettleExpense(expense.id)}
+                        className="text-label-sm text-primary font-bold hover:underline"
+                      >
+                        {t("markSettled")}
+                      </button>
+                    )}
                   {expense.receipt_url && (
                     <button
                       type="button"

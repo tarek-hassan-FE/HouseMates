@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Plus_Jakarta_Sans, Cairo } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import {
@@ -76,6 +77,15 @@ export default async function RootLayout({
       <body
         className={`min-h-full overflow-x-hidden ${isRtl ? "font-[family-name:var(--font-cairo)]" : ""}`}
       >
+        <Script id="roomies-deferred-install-prompt" strategy="beforeInteractive">
+          {`
+            window.__roomiesDeferredInstallPrompt = null;
+            window.addEventListener("beforeinstallprompt", function (e) {
+              e.preventDefault();
+              window.__roomiesDeferredInstallPrompt = e;
+            });
+          `}
+        </Script>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
             <ConfirmProvider>{children}</ConfirmProvider>

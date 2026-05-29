@@ -5,10 +5,9 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { useHouse } from "@/components/providers/house-context";
 import { MaterialIcon } from "@/components/design/material-icon";
-import { AvatarRing } from "@/components/design/avatar-ring";
 import { LocaleSwitcher } from "@/components/locale/locale-switcher";
+import { ProfileMenu } from "@/components/app/profile-menu";
 import { AppNotificationsBell } from "@/components/notifications/app-notifications-bell";
 
 const sidebarNav = [
@@ -60,8 +59,6 @@ function isActive(pathname: string, href: string, hash: string) {
 }
 
 export function AppTopBar() {
-  const { profile } = useHouse();
-  const t = useTranslations("nav");
   const tc = useTranslations("common");
 
   return (
@@ -74,28 +71,7 @@ export function AppTopBar() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <LocaleSwitcher />
             <AppNotificationsBell />
-            <div className="border-outline-variant/30 flex items-center gap-3 border-s ps-3 sm:ps-4">
-              <Link
-                href="/profile"
-                className="btn-press flex items-center gap-3"
-                aria-label={t("profileAria")}
-              >
-                <AvatarRing
-                  src={profile.avatar_url}
-                  name={profile.username}
-                  size="md"
-                  ring="primary"
-                />
-              </Link>
-              <div className="hidden flex-col leading-none lg:flex">
-                <span className="text-label-md text-on-surface font-bold">
-                  {profile.username}
-                </span>
-                <span className="text-secondary text-[10px] font-bold tracking-widest uppercase">
-                  {tc("levelShort", { level: profile.current_level })}
-                </span>
-              </div>
-            </div>
+            <ProfileMenu />
           </div>
         </div>
       </div>

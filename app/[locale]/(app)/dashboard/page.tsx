@@ -21,7 +21,6 @@ import {
 } from "@/lib/house/activity";
 import {
   debtorsWhoOweYou,
-  filterUnsettled,
   netBalanceCents,
   sumYouOweCents,
   sumYoureOwedCents,
@@ -141,7 +140,6 @@ export default async function DashboardPage() {
   const youOweCents = sumYouOweCents(debtRows, session.userId);
   const youreOwedCents = sumYoureOwedCents(debtRows, session.userId);
   const netCents = netBalanceCents(debtRows, session.userId);
-  const hasUnsettledDebts = filterUnsettled(debtRows).length > 0;
   const debtorIds = debtorsWhoOweYou(debtRows, session.userId).map(
     (d) => d.debtorId,
   );
@@ -227,7 +225,6 @@ export default async function DashboardPage() {
             youOweCents={youOweCents}
             youreOwedCents={youreOwedCents}
             memberCount={memberCount ?? 0}
-            hasUnsettledDebts={hasUnsettledDebts}
             debtorIds={debtorIds}
             reminderCooldowns={reminderCooldowns}
           />
